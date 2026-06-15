@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | Bliss Bangladesh</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/styles.css"> <!-- Fallback utilities -->
+  <link rel="stylesheet" href="/admin.css"> <!-- Custom admin UI -->
+</head>
+<body class="admin-auth-body">
+
+  <div class="auth-bg-deco">
+    <div class="plus-shape shape-1">+</div>
+    <div class="plus-shape shape-2">+</div>
+    <div class="plus-shape shape-3">+</div>
+    <div class="circle-shape shape-4"></div>
+  </div>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header text-center">
+        <div class="auth-logo">
+          <svg viewBox="0 0 48 48" width="50" height="50" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z" fill="#F8FAFC" />
+            <path d="M24 16.5C24 16.5 20.5 13 18.5 15C16.5 17 17.5 20.5 20.5 23L24 26L27.5 23C30.5 20.5 31.5 17 29.5 15C27.5 13 24 16.5 24 16.5Z" fill="#E53935" />
+            <path d="M12 28C14.5 33 20 36 24 36C28 36 33.5 33 36 28C36 28 32.5 30.5 28.5 28C24.5 25.5 23.5 25.5 19.5 28C15.5 30.5 12 28 12 28Z" fill="#0040A5" />
+            <circle cx="24" cy="11" r="3" fill="#0040A5" />
+          </svg>
+        </div>
+        <h2 class="auth-title">Administrative Portal</h2>
+        <p class="auth-subtitle">Log in to manage appointments, messages, and edit content.</p>
+      </div>
+
+      <form id="adminLoginForm" class="auth-form">
+        <div id="loginError" class="alert alert-danger hidden"></div>
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input type="text" id="username" name="username" required class="form-control" placeholder="Enter admin username" autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="label-row">
+            <label for="password">Password</label>
+          </div>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input type="password" id="password" name="password" required class="form-control" placeholder="Enter password" autocomplete="current-password">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-auth" id="loginBtn">
+          <span>Authenticate</span>
+          <div class="loader hidden" id="loginLoader"></div>
+        </button>
+      </form>
+
+      <div class="auth-footer text-center">
+        <a href="/" class="back-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back to Public Site
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Client-side authentication submission
+    const loginForm = document.getElementById('adminLoginForm');
+    const loginError = document.getElementById('loginError');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginLoader = document.getElementById('loginLoader');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginError.classList.add('hidden');
+      
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        loginError.textContent = 'Please fill out all fields.';
+        loginError.classList.remove('hidden');
+        return;
+      }
+
+      // Show loader
+      loginBtn.disabled = true;
+      loginLoader.classList.remove('hidden');
+      loginBtn.querySelector('span').textContent = 'Authenticating...';
+
+      try {
+        const response = await fetch('/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          loginBtn.querySelector('span').textContent = 'Redirecting...';
+          window.location.href = '/admin/dashboard';
+        } else {
+          loginError.textContent = data.error || 'Authentication failed.';
+          loginError.classList.remove('hidden');
+          loginBtn.disabled = false;
+          loginLoader.classList.add('hidden');
+          loginBtn.querySelector('span').textContent = 'Authenticate';
+        }
+      } catch (err) {
+        loginError.textContent = 'Connection error. Please try again.';
+        loginError.classList.remove('hidden');
+        loginBtn.disabled = false;
+        loginLoader.classList.add('hidden');
+        loginBtn.querySelector('span').textContent = 'Authenticate';
+      }
+    });
+
+    // Disable right-click and keyboard shortcuts on the login page for basic inspector shielding
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (
+        e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) || 
+        (e.ctrlKey && e.key === 'U')
+      ) {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>
