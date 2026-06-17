@@ -12,9 +12,18 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'editor',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+// Migration: add role column to existing databases created before roles were introduced
+try { db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'editor'"); } catch (_) {}
+// Ensure the first/only user (original seeded admin) gets admin role if it's still 'editor'
+try {
+  const firstUser = db.prepare("SELECT id FROM users ORDER BY id ASC LIMIT 1").get();
+  if (firstUser) db.prepare("UPDATE users SET role='admin' WHERE id=? AND role='editor'").run(firstUser.id);
+} catch (_) {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS bookings (
@@ -49,6 +58,29 @@ db.exec(`
   );
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    image_path TEXT,
+    display_order INTEGER DEFAULT 0,
+    is_visible INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS vaccines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    age_text TEXT NOT NULL,
+    offset_days INTEGER NOT NULL,
+    diseases TEXT,
+    display_order INTEGER DEFAULT 0
+  );
+`);
+
 // 1. Seed Default Admin User
 const userCheck = db.prepare('SELECT COUNT(*) as count FROM users');
 const { count: userCount } = userCheck.get();
@@ -58,8 +90,8 @@ if (userCount === 0) {
   const defaultPass = process.env.DEFAULT_ADMIN_PASS || 'admin123';
   const hash = bcrypt.hashSync(defaultPass, 10);
   
-  const insertUser = db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)');
-  insertUser.run(defaultUser, hash);
+  const insertUser = db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)');
+  insertUser.run(defaultUser, hash, 'admin');
   console.log(`Database seeded with default admin user: ${defaultUser}`);
 }
 
@@ -131,7 +163,14 @@ if (settingsCount === 0) {
     service_autism_hl_1: 'Early diagnostic screening and standardized developmental assessments.',
     service_autism_hl_2: 'One-on-one occupational therapy and sensory integration sessions.',
     service_autism_hl_3: 'Speech and language therapy to support communication milestones.',
-    service_autism_hl_4: 'Family counseling and parent-led home training programs.'
+    service_autism_hl_4: 'Family counseling and parent-led home training programs.',
+
+    // Images (Hero banner & Service card images)
+    hero_image: '/assets/images/hero.png',
+    service_vax_image: '',
+    service_fp_image: '',
+    service_anc_image: '',
+    service_autism_image: ''
   };
 
   const insertSetting = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)');
@@ -139,6 +178,49 @@ if (settingsCount === 0) {
     insertSetting.run(key, value);
   }
   console.log('Database seeded with default settings.');
+}
+
+// 2b. Ensure image-related setting keys exist (covers databases created before this feature)
+const ensureSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
+const newSettingDefaults = {
+  hero_image: '/assets/images/hero.png',
+  service_vax_image: '',
+  service_fp_image: '',
+  service_anc_image: '',
+  service_autism_image: ''
+};
+for (const [key, value] of Object.entries(newSettingDefaults)) {
+  ensureSetting.run(key, value);
+}
+
+// 3. Seed Default EPI Vaccine Schedule
+const vaccineCheck = db.prepare('SELECT COUNT(*) as count FROM vaccines');
+const { count: vaccineCount } = vaccineCheck.get();
+
+if (vaccineCount === 0) {
+  const defaultVaccines = [
+    { name: 'BCG (Tuberculosis)', age_text: 'At Birth', offset_days: 0, diseases: 'Tuberculosis (TB)' },
+    { name: 'OPV 0 (Oral Polio Vaccine)', age_text: 'At Birth', offset_days: 0, diseases: 'Poliomyelitis' },
+    { name: 'Pentavalent 1 (DPT-HepB-Hib)', age_text: '6 Weeks', offset_days: 42, diseases: 'Diphtheria, Pertussis, Tetanus, Hepatitis B, Haemophilus Influenzae' },
+    { name: 'OPV 1', age_text: '6 Weeks', offset_days: 42, diseases: 'Poliomyelitis' },
+    { name: 'PCV 1 (Pneumococcal Vaccine)', age_text: '6 Weeks', offset_days: 42, diseases: 'Pneumonia, Meningitis' },
+    { name: 'Pentavalent 2', age_text: '10 Weeks', offset_days: 70, diseases: 'Diphtheria, Pertussis, Tetanus, Hepatitis B, Haemophilus Influenzae' },
+    { name: 'OPV 2', age_text: '10 Weeks', offset_days: 70, diseases: 'Poliomyelitis' },
+    { name: 'PCV 2', age_text: '10 Weeks', offset_days: 70, diseases: 'Pneumonia, Meningitis' },
+    { name: 'Pentavalent 3', age_text: '14 Weeks', offset_days: 98, diseases: 'Diphtheria, Pertussis, Tetanus, Hepatitis B, Haemophilus Influenzae' },
+    { name: 'OPV 3', age_text: '14 Weeks', offset_days: 98, diseases: 'Poliomyelitis' },
+    { name: 'PCV 3', age_text: '14 Weeks', offset_days: 98, diseases: 'Pneumonia, Meningitis' },
+    { name: 'fIPV 1 (Fractional Inactivated Polio)', age_text: '14 Weeks', offset_days: 98, diseases: 'Poliomyelitis' },
+    { name: 'MR 1 (Measles & Rubella)', age_text: '9 Months', offset_days: 270, diseases: 'Measles, Rubella' },
+    { name: 'fIPV 2', age_text: '9 Months', offset_days: 270, diseases: 'Poliomyelitis' },
+    { name: 'MR 2', age_text: '15 Months', offset_days: 450, diseases: 'Measles, Rubella' }
+  ];
+
+  const insertVaccine = db.prepare('INSERT INTO vaccines (name, age_text, offset_days, diseases, display_order) VALUES (?, ?, ?, ?, ?)');
+  defaultVaccines.forEach((v, idx) => {
+    insertVaccine.run(v.name, v.age_text, v.offset_days, v.diseases, idx + 1);
+  });
+  console.log('Database seeded with default EPI vaccine schedule.');
 }
 
 module.exports = db;

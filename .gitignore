@@ -2,3 +2,7 @@ node_modules/
 .env
 database.db
 *.log
+public/uploads/*
+!public/uploads/.gitkeep
+.vscode/
+.vscode/

@@ -1,3 +1,8 @@
+// ── Supabase client (uses values from supabase-config.js) ──
+const _supabase = (typeof supabase !== 'undefined' && typeof SUPABASE_URL !== 'undefined')
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
 document.addEventListener('DOMContentLoaded', () => {
   
   // ==========================================
@@ -115,14 +120,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Form Booking Submission
   if (bookingForm) {
-    bookingForm.addEventListener('submit', (e) => {
+    bookingForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const patientName = document.getElementById('bookName').value;
-      const phoneNum = document.getElementById('bookPhone').value;
-      const service = document.getElementById('bookService').value;
+
+      const patientName  = document.getElementById('bookName').value.trim();
+      const phoneNum     = document.getElementById('bookPhone').value.trim();
+      const dob          = document.getElementById('bookDob').value || null;
+      const service      = document.getElementById('bookService').value;
       const appointmentDate = document.getElementById('bookDate').value;
-      
+      const timeSlot     = document.getElementById('bookTime').value;
+
+      // Disable submit while saving
+      const submitBtn = bookingForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving…';
+
+      // Save to Supabase
+      if (_supabase) {
+        await _supabase.from('appointments').insert({
+          patient_name:     patientName,
+          phone:            phoneNum,
+          dob:              dob,
+          service:          service,
+          appointment_date: appointmentDate,
+          time_slot:        timeSlot,
+          status:           'pending'
+        });
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Confirm Appointment Request';
+
       // Basic formatting for output
       const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
         weekday: 'short',
@@ -421,36 +449,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const contactFeedback = document.getElementById('contactFeedback');
 
   if (contactForm && contactFeedback) {
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const name = document.getElementById('contactName').value;
-      const phone = document.getElementById('contactPhone').value;
-      
-      // Disable form buttons during loading animation
+
+      const name    = document.getElementById('contactName').value.trim();
+      const email   = document.getElementById('contactEmail').value.trim() || null;
+      const phone   = document.getElementById('contactPhone').value.trim();
+      const message = document.getElementById('contactMessage').value.trim();
+
       const submitBtn = contactForm.querySelector('button[type="submit"]');
       const originalText = submitBtn.textContent;
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending Message...';
+      submitBtn.textContent = 'Sending…';
 
-      // Simulate network request
-      setTimeout(() => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-        
-        // Show success state
-        contactFeedback.textContent = `Thank you, ${name}! Your message has been sent successfully. We will call you at ${phone} shortly.`;
-        contactFeedback.className = 'form-feedback feedback-success';
-        contactFeedback.classList.remove('hidden');
-        
-        // Reset form
-        contactForm.reset();
-        
-        // Hide feedback after 8 seconds
-        setTimeout(() => {
-          contactFeedback.classList.add('hidden');
-        }, 8000);
-      }, 1200);
+      // Save to Supabase
+      if (_supabase) {
+        await _supabase.from('contact_submissions').insert({
+          name, email, phone, message
+        });
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+
+      contactFeedback.textContent = `Thank you, ${name}! Your message has been received. We will call you at ${phone} shortly.`;
+      contactFeedback.className = 'form-feedback feedback-success';
+      contactFeedback.classList.remove('hidden');
+
+      contactForm.reset();
+
+      setTimeout(() => contactFeedback.classList.add('hidden'), 8000);
     });
   }
 });

@@ -366,32 +366,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // EPI Schedule Definition (offsets in days from DOB)
-  const epiSchedule = [
-    { name: 'BCG (Tuberculosis)', ageText: 'At Birth', offsetDays: 0, diseases: 'Tuberculosis (TB)' },
-    { name: 'OPV 0 (Oral Polio Vaccine)', ageText: 'At Birth', offsetDays: 0, diseases: 'Poliomyelitis' },
-    { name: 'Pentavalent 1 (DPT-HepB-Hib)', ageText: '6 Weeks', offsetDays: 42, diseases: 'Diphtheria, Pertussis, Tetanus, Hepatitis B, Haemophilus Influenzae' },
-    { name: 'OPV 1', ageText: '6 Weeks', offsetDays: 42, diseases: 'Poliomyelitis' },
-    { name: 'PCV 1 (Pneumococcal Vaccine)', ageText: '6 Weeks', offsetDays: 42, diseases: 'Pneumonia, Meningitis' },
-    { name: 'Pentavalent 2', ageText: '10 Weeks', offsetDays: 70, diseases: 'Diphtheria, Pertussis, Tetanus, Hepatitis B, Haemophilus Influenzae' },
-    { name: 'OPV 2', ageText: '10 Weeks', offsetDays: 70, diseases: 'Poliomyelitis' },
-    { name: 'PCV 2', ageText: '10 Weeks', offsetDays: 70, diseases: 'Pneumonia, Meningitis' },
-    { name: 'Pentavalent 3', ageText: '14 Weeks', offsetDays: 98, diseases: 'Diphtheria, Pertussis, Tetanus, Hepatitis B, Haemophilus Influenzae' },
-    { name: 'OPV 3', ageText: '14 Weeks', offsetDays: 98, diseases: 'Poliomyelitis' },
-    { name: 'PCV 3', ageText: '14 Weeks', offsetDays: 98, diseases: 'Pneumonia, Meningitis' },
-    { name: 'fIPV 1 (Fractional Inactivated Polio)', ageText: '14 Weeks', offsetDays: 98, diseases: 'Poliomyelitis' },
-    { name: 'MR 1 (Measles & Rubella)', ageText: '9 Months', offsetDays: 270, diseases: 'Measles, Rubella' },
-    { name: 'fIPV 2', ageText: '9 Months', offsetDays: 270, diseases: 'Poliomyelitis' },
-    { name: 'MR 2', ageText: '15 Months', offsetDays: 450, diseases: 'Measles, Rubella' }
-  ];
+  // EPI Schedule Definition (loaded from the database via /api/vaccines)
+  let epiSchedule = [];
+  let epiScheduleLoaded = false;
+
+  async function loadEpiSchedule() {
+    if (epiScheduleLoaded) return epiSchedule;
+    try {
+      const response = await fetch('/api/vaccines');
+      const data = await response.json();
+      epiSchedule = data.map(v => ({
+        name: v.name,
+        ageText: v.age_text,
+        offsetDays: v.offset_days,
+        diseases: v.diseases
+      }));
+      epiScheduleLoaded = true;
+    } catch (err) {
+      console.error('Failed to load vaccine schedule:', err);
+    }
+    return epiSchedule;
+  }
 
   if (calcScheduleBtn) {
-    calcScheduleBtn.addEventListener('click', () => {
+    calcScheduleBtn.addEventListener('click', async () => {
       const dobValue = childDobInput.value;
       if (!dobValue) {
         alert('Please enter a valid Date of Birth first.');
         return;
       }
+
+      await loadEpiSchedule();
 
       const dob = new Date(dobValue);
       const today = new Date();

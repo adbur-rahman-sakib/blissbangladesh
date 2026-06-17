@@ -157,7 +157,7 @@
 
         <!-- Main Image Container -->
         <div class="image-wrapper">
-          <img src="assets/images/hero.png" alt="Healthy South Asian mother smiling and holding her happy child" class="hero-image">
+          <img src="<%= settings.hero_image || '/assets/images/hero.png' %>" alt="Healthy South Asian mother smiling and holding her happy child" class="hero-image">
           
           <!-- Glass Card Overlay -->
           <div class="glass-card-priority">
@@ -263,6 +263,9 @@
             </svg>
           </div>
           <div class="service-icon-wrapper">
+            <% if (settings.service_vax_image) { %>
+              <img src="<%= settings.service_vax_image %>" alt="EPI Vaccination" class="service-icon-img">
+            <% } else { %>
             <!-- Syringe Icon -->
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0040A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="2" x2="22" y2="6"/>
@@ -274,6 +277,7 @@
               <line x1="13" y1="9" x2="15" y2="11"/>
               <line x1="10" y1="12" x2="12" y2="14"/>
             </svg>
+            <% } %>
           </div>
           <h3 class="service-name">EPI Vaccination</h3>
           <p class="service-desc"><%= settings.service_vax_desc %></p>
@@ -294,6 +298,9 @@
             </svg>
           </div>
           <div class="service-icon-wrapper">
+            <% if (settings.service_fp_image) { %>
+              <img src="<%= settings.service_fp_image %>" alt="Family Planning" class="service-icon-img">
+            <% } else { %>
             <!-- Family/People Icon -->
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0040A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -301,6 +308,7 @@
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
+            <% } %>
           </div>
           <h3 class="service-name">Family Planning</h3>
           <p class="service-desc"><%= settings.service_fp_desc %></p>
@@ -321,12 +329,16 @@
             </svg>
           </div>
           <div class="service-icon-wrapper">
+            <% if (settings.service_anc_image) { %>
+              <img src="<%= settings.service_anc_image %>" alt="Antenatal Care" class="service-icon-img">
+            <% } else { %>
             <!-- Pregnant Woman/Baby Care Icon -->
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0040A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="5" r="2"/>
               <path d="M12 7c-1.5 0-3 1-3 3v5c0 2.5 1.5 4.5 3.5 5.5l.5.5.5-.5c2-1 3.5-3 3.5-5.5v-5c0-2-1.5-3-3-3z"/>
               <path d="M9 11.5c.5.5 1.5.5 2 0L12 11l1 .5c.5.5 1.5.5 2 0"/>
             </svg>
+            <% } %>
           </div>
           <h3 class="service-name">Antenatal Care</h3>
           <p class="service-desc"><%= settings.service_anc_desc %></p>
@@ -347,10 +359,14 @@
             </svg>
           </div>
           <div class="service-icon-wrapper">
+            <% if (settings.service_autism_image) { %>
+              <img src="<%= settings.service_autism_image %>" alt="Autism Support" class="service-icon-img">
+            <% } else { %>
             <!-- Puzzle Piece Icon -->
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0040A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M19 10a3 3 0 0 0-3-3h-1V6a3 3 0 0 0-6 0v1H8a3 3 0 0 0-3 3v1H4a3 3 0 0 0 0 6h1v1a3 3 0 0 0 3 3h1a3 3 0 0 0 6 0v-1h1a3 3 0 0 0 3-3v-1a3 3 0 0 0 0-6h-1v-1z"/>
             </svg>
+            <% } %>
           </div>
           <h3 class="service-name">Autism Support</h3>
           <p class="service-desc"><%= settings.service_autism_desc %></p>
@@ -441,6 +457,23 @@
       </div>
     </div>
   </section>
+
+  <!-- Custom Content Sections (managed via Admin Dashboard) -->
+  <% sections.forEach((section, idx) => { %>
+  <section class="custom-section <%= idx % 2 === 1 ? 'custom-section-reverse' : '' %>">
+    <div class="container custom-section-grid">
+      <% if (section.image_path) { %>
+      <div class="custom-section-image">
+        <img src="<%= section.image_path %>" alt="<%= section.title %>">
+      </div>
+      <% } %>
+      <div class="custom-section-content">
+        <h2 class="section-title"><%= section.title %></h2>
+        <p><%- section.content %></p>
+      </div>
+    </div>
+  </section>
+  <% }) %>
 
   <!-- Contact Section (Includes interactive form) -->
   <section class="contact-section" id="contact">

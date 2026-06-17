@@ -4,6 +4,8 @@ const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
 const db = require('./database');
 
@@ -49,6 +51,46 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ==========================================
+// IMAGE UPLOAD CONFIGURATION
+// ==========================================
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const ALLOWED_IMAGE_TYPES = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ALLOWED_IMAGE_TYPES.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Allowed image types: JPG, PNG, WEBP, GIF.'));
+    }
+  }
+});
+
+// Helper: Delete a previously uploaded image (ignores default/static asset paths)
+function deleteUploadedImage(imagePath) {
+  if (imagePath && imagePath.startsWith('/uploads/')) {
+    fs.unlink(path.join(__dirname, 'public', imagePath), () => {});
+  }
+}
+
 // Rate limiter: max 10 login attempts per 15 minutes per IP
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -69,6 +111,19 @@ function isAuthenticated(req, res, next) {
   res.redirect('/admin/login');
 }
 
+// Role-based access middleware — usage: requireRole('admin') or requireRole('admin', 'manager')
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.session || !req.session.adminId) {
+      return res.status(401).json({ error: 'Unauthorized access. Please log in.' });
+    }
+    if (!roles.includes(req.session.role)) {
+      return res.status(403).json({ error: 'You do not have permission to perform this action.' });
+    }
+    next();
+  };
+}
+
 // Helper: Get all settings from database
 function getSettings() {
   const rows = db.prepare('SELECT key, value FROM settings').all();
@@ -87,10 +142,22 @@ function getSettings() {
 app.get('/', (req, res) => {
   try {
     const settings = getSettings();
-    res.render('index', { settings });
+    const sections = db.prepare('SELECT * FROM sections WHERE is_visible = 1 ORDER BY display_order ASC, id ASC').all();
+    res.render('index', { settings, sections });
   } catch (err) {
     console.error('Error loading home page:', err);
     res.status(500).send('Internal Server Error');
+  }
+});
+
+// GET: EPI Vaccine Schedule (used by the public immunization calculator)
+app.get('/api/vaccines', (req, res) => {
+  try {
+    const vaccines = db.prepare('SELECT id, name, age_text, offset_days, diseases FROM vaccines ORDER BY display_order ASC, offset_days ASC').all();
+    res.json(vaccines);
+  } catch (err) {
+    console.error('Error fetching vaccine schedule:', err);
+    res.status(500).json({ error: 'Failed to load vaccine schedule.' });
   }
 });
 
@@ -175,6 +242,7 @@ app.post('/admin/login', loginLimiter, (req, res) => {
     if (user && bcrypt.compareSync(password, user.password_hash)) {
       req.session.adminId = user.id;
       req.session.username = user.username;
+      req.session.role = user.role || 'editor';
       return res.json({ success: true });
     }
 
@@ -203,18 +271,23 @@ app.get('/admin/logout', (req, res) => {
 app.get('/admin/dashboard', isAuthenticated, (req, res) => {
   try {
     const settings = getSettings();
-    
+
     const bookings = db.prepare('SELECT * FROM bookings ORDER BY created_at DESC').all();
     const contacts = db.prepare('SELECT * FROM contacts ORDER BY created_at DESC').all();
-    const users = db.prepare('SELECT id, username, created_at FROM users').all();
-    
+    const users = db.prepare('SELECT id, username, role, created_at FROM users').all();
+    const sections = db.prepare('SELECT * FROM sections ORDER BY display_order ASC, id ASC').all();
+    const vaccines = db.prepare('SELECT * FROM vaccines ORDER BY display_order ASC, offset_days ASC').all();
+
     res.render('admin/dashboard', {
       settings,
       bookings,
       contacts,
       users,
+      sections,
+      vaccines,
       currentUser: req.session.username,
-      currentUserId: req.session.adminId
+      currentUserId: req.session.adminId,
+      currentUserRole: req.session.role || 'editor'
     });
   } catch (err) {
     console.error('Error loading admin dashboard:', err);
@@ -249,7 +322,7 @@ app.post('/api/admin/bookings/status', isAuthenticated, (req, res) => {
 });
 
 // DELETE: Delete Booking
-app.delete('/api/admin/bookings/:id', isAuthenticated, (req, res) => {
+app.delete('/api/admin/bookings/:id', requireRole('admin', 'manager'), (req, res) => {
   try {
     const { id } = req.params;
     const stmt = db.prepare('DELETE FROM bookings WHERE id = ?');
@@ -289,7 +362,7 @@ app.post('/api/admin/contacts/status', isAuthenticated, (req, res) => {
 });
 
 // DELETE: Delete Contact Inquiry
-app.delete('/api/admin/contacts/:id', isAuthenticated, (req, res) => {
+app.delete('/api/admin/contacts/:id', requireRole('admin', 'manager'), (req, res) => {
   try {
     const { id } = req.params;
     const stmt = db.prepare('DELETE FROM contacts WHERE id = ?');
@@ -328,10 +401,10 @@ app.post('/api/admin/settings', isAuthenticated, (req, res) => {
   }
 });
 
-// POST: Create Admin User
-app.post('/api/admin/users', isAuthenticated, (req, res) => {
+// POST: Create Admin User (admin only)
+app.post('/api/admin/users', requireRole('admin'), (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, role } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required.' });
     }
@@ -339,6 +412,9 @@ app.post('/api/admin/users', isAuthenticated, (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     }
+
+    const validRoles = ['admin', 'manager', 'editor'];
+    const assignedRole = validRoles.includes(role) ? role : 'editor';
 
     // Check if user already exists
     const checkStmt = db.prepare('SELECT id FROM users WHERE username = ?');
@@ -348,11 +424,11 @@ app.post('/api/admin/users', isAuthenticated, (req, res) => {
     }
 
     const hash = bcrypt.hashSync(password, 10);
-    const stmt = db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)');
-    const result = stmt.run(username, hash);
+    const stmt = db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)');
+    const result = stmt.run(username, hash, assignedRole);
 
     if (result.changes > 0) {
-      res.json({ success: true, userId: result.lastInsertRowid });
+      res.json({ success: true, userId: result.lastInsertRowid, role: assignedRole });
     } else {
       res.status(500).json({ error: 'Failed to create user.' });
     }
@@ -362,8 +438,8 @@ app.post('/api/admin/users', isAuthenticated, (req, res) => {
   }
 });
 
-// DELETE: Delete Admin User
-app.delete('/api/admin/users/:id', isAuthenticated, (req, res) => {
+// DELETE: Delete Admin User (admin only)
+app.delete('/api/admin/users/:id', requireRole('admin'), (req, res) => {
   try {
     const { id } = req.params;
     
@@ -386,7 +462,7 @@ app.delete('/api/admin/users/:id', isAuthenticated, (req, res) => {
   }
 });
 
-// POST: Change Password (any admin for themselves, or for others)
+// POST: Change Password — admin can change any user's; manager/editor can only change their own
 app.post('/api/admin/users/change-password', isAuthenticated, (req, res) => {
   try {
     const { userId, newPassword } = req.body;
@@ -396,6 +472,11 @@ app.post('/api/admin/users/change-password', isAuthenticated, (req, res) => {
 
     if (newPassword.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    }
+
+    const role = req.session.role || 'editor';
+    if (role !== 'admin' && parseInt(userId) !== req.session.adminId) {
+      return res.status(403).json({ error: 'You can only change your own password.' });
     }
 
     const hash = bcrypt.hashSync(newPassword, 10);
@@ -411,6 +492,259 @@ app.post('/api/admin/users/change-password', isAuthenticated, (req, res) => {
     console.error('Error changing password:', err);
     res.status(500).json({ error: 'Password update failed.' });
   }
+});
+
+// ==========================================
+// 5. SECTIONS, VACCINES & IMAGE UPLOADS
+// ==========================================
+
+// Whitelist of settings keys that may be updated via image upload
+const ALLOWED_IMAGE_SETTING_FIELDS = [
+  'hero_image',
+  'service_vax_image',
+  'service_fp_image',
+  'service_anc_image',
+  'service_autism_image'
+];
+
+// POST: Upload/replace an image for a whitelisted settings field (hero banner, service cards)
+app.post('/api/admin/upload-setting-image', isAuthenticated, upload.single('image'), (req, res) => {
+  try {
+    const { field } = req.body;
+
+    if (!ALLOWED_IMAGE_SETTING_FIELDS.includes(field)) {
+      if (req.file) deleteUploadedImage(`/uploads/${req.file.filename}`);
+      return res.status(400).json({ error: 'Invalid settings field for image upload.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file uploaded.' });
+    }
+
+    const newPath = `/uploads/${req.file.filename}`;
+
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(field);
+    const oldPath = row ? row.value : null;
+
+    db.prepare('UPDATE settings SET value = ? WHERE key = ?').run(newPath, field);
+
+    deleteUploadedImage(oldPath);
+
+    res.json({ success: true, path: newPath });
+  } catch (err) {
+    console.error('Error uploading settings image:', err);
+    res.status(500).json({ error: 'Image upload failed.' });
+  }
+});
+
+// ----- Custom Homepage Sections CRUD -----
+
+// POST: Create a new custom section
+app.post('/api/admin/sections', isAuthenticated, upload.single('image'), (req, res) => {
+  try {
+    const { title, content, is_visible } = req.body;
+
+    if (!title || !content) {
+      if (req.file) deleteUploadedImage(`/uploads/${req.file.filename}`);
+      return res.status(400).json({ error: 'Title and content are required.' });
+    }
+
+    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const visible = is_visible === '0' ? 0 : 1;
+
+    const maxOrderRow = db.prepare('SELECT MAX(display_order) as maxOrder FROM sections').get();
+    const nextOrder = (maxOrderRow.maxOrder || 0) + 1;
+
+    const stmt = db.prepare(`
+      INSERT INTO sections (title, content, image_path, display_order, is_visible)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(title, content, imagePath, nextOrder, visible);
+
+    res.json({ success: true, sectionId: result.lastInsertRowid });
+  } catch (err) {
+    console.error('Error creating section:', err);
+    res.status(500).json({ error: 'Failed to create section.' });
+  }
+});
+
+// POST: Update an existing custom section
+app.post('/api/admin/sections/:id', isAuthenticated, upload.single('image'), (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content, is_visible } = req.body;
+
+    if (!title || !content) {
+      if (req.file) deleteUploadedImage(`/uploads/${req.file.filename}`);
+      return res.status(400).json({ error: 'Title and content are required.' });
+    }
+
+    const existing = db.prepare('SELECT image_path FROM sections WHERE id = ?').get(id);
+    if (!existing) {
+      if (req.file) deleteUploadedImage(`/uploads/${req.file.filename}`);
+      return res.status(404).json({ error: 'Section not found.' });
+    }
+
+    const visible = is_visible === '0' ? 0 : 1;
+    let imagePath = existing.image_path;
+
+    if (req.file) {
+      imagePath = `/uploads/${req.file.filename}`;
+      deleteUploadedImage(existing.image_path);
+    }
+
+    const stmt = db.prepare(`
+      UPDATE sections SET title = ?, content = ?, image_path = ?, is_visible = ? WHERE id = ?
+    `);
+    stmt.run(title, content, imagePath, visible, id);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating section:', err);
+    res.status(500).json({ error: 'Failed to update section.' });
+  }
+});
+
+// DELETE: Remove a custom section
+app.delete('/api/admin/sections/:id', requireRole('admin', 'manager'), (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existing = db.prepare('SELECT image_path FROM sections WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Section not found.' });
+    }
+
+    db.prepare('DELETE FROM sections WHERE id = ?').run(id);
+    deleteUploadedImage(existing.image_path);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting section:', err);
+    res.status(500).json({ error: 'Failed to delete section.' });
+  }
+});
+
+// POST: Reorder a custom section (move up or down)
+app.post('/api/admin/sections/:id/move', isAuthenticated, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { direction } = req.body;
+
+    if (direction !== 'up' && direction !== 'down') {
+      return res.status(400).json({ error: 'Direction must be "up" or "down".' });
+    }
+
+    const current = db.prepare('SELECT * FROM sections WHERE id = ?').get(id);
+    if (!current) {
+      return res.status(404).json({ error: 'Section not found.' });
+    }
+
+    const neighbor = direction === 'up'
+      ? db.prepare('SELECT * FROM sections WHERE display_order < ? ORDER BY display_order DESC LIMIT 1').get(current.display_order)
+      : db.prepare('SELECT * FROM sections WHERE display_order > ? ORDER BY display_order ASC LIMIT 1').get(current.display_order);
+
+    if (!neighbor) {
+      return res.json({ success: true });
+    }
+
+    const updateOrder = db.prepare('UPDATE sections SET display_order = ? WHERE id = ?');
+    updateOrder.run(neighbor.display_order, current.id);
+    updateOrder.run(current.display_order, neighbor.id);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error reordering section:', err);
+    res.status(500).json({ error: 'Failed to reorder section.' });
+  }
+});
+
+// ----- Vaccine Schedule CRUD -----
+
+// POST: Create a new vaccine schedule entry
+app.post('/api/admin/vaccines', isAuthenticated, (req, res) => {
+  try {
+    const { name, age_text, offset_days, diseases } = req.body;
+
+    if (!name || !age_text || offset_days === undefined || offset_days === null || offset_days === '') {
+      return res.status(400).json({ error: 'Name, age text, and offset days are required.' });
+    }
+
+    const maxOrderRow = db.prepare('SELECT MAX(display_order) as maxOrder FROM vaccines').get();
+    const nextOrder = (maxOrderRow.maxOrder || 0) + 1;
+
+    const stmt = db.prepare(`
+      INSERT INTO vaccines (name, age_text, offset_days, diseases, display_order)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(name, age_text, parseInt(offset_days, 10), diseases || '', nextOrder);
+
+    res.json({ success: true, vaccineId: result.lastInsertRowid });
+  } catch (err) {
+    console.error('Error creating vaccine entry:', err);
+    res.status(500).json({ error: 'Failed to create vaccine entry.' });
+  }
+});
+
+// POST: Update a vaccine schedule entry
+app.post('/api/admin/vaccines/:id', isAuthenticated, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, age_text, offset_days, diseases } = req.body;
+
+    if (!name || !age_text || offset_days === undefined || offset_days === null || offset_days === '') {
+      return res.status(400).json({ error: 'Name, age text, and offset days are required.' });
+    }
+
+    const stmt = db.prepare(`
+      UPDATE vaccines SET name = ?, age_text = ?, offset_days = ?, diseases = ? WHERE id = ?
+    `);
+    const result = stmt.run(name, age_text, parseInt(offset_days, 10), diseases || '', id);
+
+    if (result.changes > 0) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Vaccine entry not found.' });
+    }
+  } catch (err) {
+    console.error('Error updating vaccine entry:', err);
+    res.status(500).json({ error: 'Failed to update vaccine entry.' });
+  }
+});
+
+// DELETE: Remove a vaccine schedule entry
+app.delete('/api/admin/vaccines/:id', requireRole('admin', 'manager'), (req, res) => {
+  try {
+    const { id } = req.params;
+    const stmt = db.prepare('DELETE FROM vaccines WHERE id = ?');
+    const result = stmt.run(id);
+
+    if (result.changes > 0) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Vaccine entry not found.' });
+    }
+  } catch (err) {
+    console.error('Error deleting vaccine entry:', err);
+    res.status(500).json({ error: 'Failed to delete vaccine entry.' });
+  }
+});
+
+// ==========================================
+// ERROR HANDLING MIDDLEWARE (multer & general)
+// ==========================================
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'Image file is too large. Maximum size is 5MB.' });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+  if (err) {
+    console.error('Unhandled error:', err);
+    return res.status(500).json({ error: err.message || 'An unexpected error occurred.' });
+  }
+  next();
 });
 
 // Start the server

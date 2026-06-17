@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/styles.css"> <!-- Base styles reset -->
   <link rel="stylesheet" href="/admin.css"> <!-- Admin portal UI styles -->
 </head>
-<body class="admin-dashboard-body">
+<body class="admin-dashboard-body" data-role="<%= currentUserRole %>">
 
   <div class="admin-dashboard-layout">
     
@@ -36,7 +36,7 @@
         </div>
         <div class="user-meta">
           <h5><%= currentUser %></h5>
-          <span>Administrator</span>
+          <span class="role-badge role-<%= currentUserRole %>"><%= currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1) %></span>
         </div>
       </div>
 
@@ -80,6 +80,29 @@
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
               <span>Manage Website</span>
+            </a>
+          </li>
+          <li class="sidebar-item" data-panel="sections">
+            <a class="sidebar-link">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="9" y1="21" x2="9" y2="9"/>
+              </svg>
+              <span>Homepage Sections</span>
+            </a>
+          </li>
+          <li class="sidebar-item" data-panel="vaccines">
+            <a class="sidebar-link">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="2" x2="22" y2="6"/>
+                <line x1="14" y1="6" x2="18" y2="10"/>
+                <line x1="17" y1="3" x2="9" y2="11"/>
+                <path d="M12 8l-6 6H3v-3l6-6"/>
+                <line x1="11" y1="13" x2="5" y2="19"/>
+                <line x1="5" y1="19" x2="2" y2="22"/>
+              </svg>
+              <span>Vaccine Schedule</span>
             </a>
           </li>
           <li class="sidebar-item" data-panel="users">
@@ -332,7 +355,9 @@
                               <button class="action-btn btn-confirm" onclick="updateBookingStatus(<%= b.id %>, 'Confirmed')" title="Confirm Appointment">✓</button>
                               <button class="action-btn btn-complete" onclick="updateBookingStatus(<%= b.id %>, 'Completed')" title="Mark Completed">✔</button>
                               <button class="action-btn btn-cancel" onclick="updateBookingStatus(<%= b.id %>, 'Cancelled')" title="Cancel Appointment">×</button>
+                              <% if(currentUserRole === 'admin' || currentUserRole === 'manager') { %>
                               <button class="action-btn btn-delete" onclick="deleteBooking(<%= b.id %>)" title="Delete Record">🗑</button>
+                              <% } %>
                             </div>
                           </td>
                         </tr>
@@ -382,7 +407,9 @@
                         <% if(c.status === 'Pending') { %>
                           <button class="btn btn-secondary btn-sm" id="btn-read-<%= c.id %>" onclick="updateInquiryStatus(<%= c.id %>, 'Replied')">Mark Replied</button>
                         <% } %>
+                        <% if(currentUserRole === 'admin' || currentUserRole === 'manager') { %>
                         <button class="btn btn-danger btn-sm" onclick="deleteInquiry(<%= c.id %>)" style="background-color: var(--color-status-cancelled); border:none;">Delete Message</button>
+                        <% } %>
                       </div>
                     </div>
                   <% }) %>
@@ -396,8 +423,100 @@
              PANEL 4: SETTINGS (MANAGE WEBSITE DATA)
              ========================================== -->
         <div class="dashboard-panel" id="panel-settings">
+
+          <!-- Site Images & Media -->
+          <div class="panel-card">
+            <div class="panel-card-header">
+              <h3>Site Images & Media</h3>
+            </div>
+            <div class="panel-card-body">
+              <div class="image-upload-grid">
+                <!-- Hero Banner Image -->
+                <div class="image-upload-item">
+                  <label>Hero Banner Image</label>
+                  <div class="image-preview-box" id="preview-box-hero_image">
+                    <% if (settings.hero_image) { %>
+                      <img src="<%= settings.hero_image %>" alt="Hero Banner">
+                    <% } else { %>
+                      <span class="no-image-text">No image set</span>
+                    <% } %>
+                  </div>
+                  <form class="image-upload-form" data-field="hero_image">
+                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
+                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
+                  </form>
+                </div>
+
+                <!-- EPI Vaccination Card Image/Icon -->
+                <div class="image-upload-item">
+                  <label>EPI Vaccination Card Image</label>
+                  <div class="image-preview-box" id="preview-box-service_vax_image">
+                    <% if (settings.service_vax_image) { %>
+                      <img src="<%= settings.service_vax_image %>" alt="EPI Vaccination">
+                    <% } else { %>
+                      <span class="no-image-text">Using default icon</span>
+                    <% } %>
+                  </div>
+                  <form class="image-upload-form" data-field="service_vax_image">
+                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
+                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
+                  </form>
+                </div>
+
+                <!-- Family Planning Card Image/Icon -->
+                <div class="image-upload-item">
+                  <label>Family Planning Card Image</label>
+                  <div class="image-preview-box" id="preview-box-service_fp_image">
+                    <% if (settings.service_fp_image) { %>
+                      <img src="<%= settings.service_fp_image %>" alt="Family Planning">
+                    <% } else { %>
+                      <span class="no-image-text">Using default icon</span>
+                    <% } %>
+                  </div>
+                  <form class="image-upload-form" data-field="service_fp_image">
+                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
+                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
+                  </form>
+                </div>
+
+                <!-- Antenatal Care Card Image/Icon -->
+                <div class="image-upload-item">
+                  <label>Antenatal Care Card Image</label>
+                  <div class="image-preview-box" id="preview-box-service_anc_image">
+                    <% if (settings.service_anc_image) { %>
+                      <img src="<%= settings.service_anc_image %>" alt="Antenatal Care">
+                    <% } else { %>
+                      <span class="no-image-text">Using default icon</span>
+                    <% } %>
+                  </div>
+                  <form class="image-upload-form" data-field="service_anc_image">
+                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
+                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
+                  </form>
+                </div>
+
+                <!-- Autism Support Card Image/Icon -->
+                <div class="image-upload-item">
+                  <label>Autism Support Card Image</label>
+                  <div class="image-preview-box" id="preview-box-service_autism_image">
+                    <% if (settings.service_autism_image) { %>
+                      <img src="<%= settings.service_autism_image %>" alt="Autism Support">
+                    <% } else { %>
+                      <span class="no-image-text">Using default icon</span>
+                    <% } %>
+                  </div>
+                  <form class="image-upload-form" data-field="service_autism_image">
+                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
+                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
+                  </form>
+                </div>
+              </div>
+              <p class="image-upload-hint">Allowed formats: JPG, PNG, WEBP, GIF. Maximum size: 5MB.</p>
+            </div>
+          </div>
+
           <form id="websiteSettingsForm" class="admin-form">
-            
+
             <!-- Hero Settings -->
             <div class="panel-card">
               <div class="panel-card-header">
@@ -669,6 +788,165 @@
         </div>
 
         <!-- ==========================================
+             PANEL: HOMEPAGE SECTIONS (CUSTOM CONTENT BLOCKS)
+             ========================================== -->
+        <div class="dashboard-panel" id="panel-sections">
+          <div class="dashboard-content-grid">
+
+            <!-- List of Existing Sections -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <h3>Custom Homepage Sections</h3>
+              </div>
+              <div class="panel-card-body">
+                <div class="section-list" id="sectionsContainer">
+                  <% if(sections.length === 0) { %>
+                    <p id="noSectionsText" style="text-align: center; color: var(--color-text-muted); padding: 30px;">No custom sections created yet. Add one using the form.</p>
+                  <% } else { %>
+                    <% sections.forEach(s => { %>
+                      <div class="section-item" id="section-item-<%= s.id %>">
+                        <div class="section-thumb">
+                          <% if (s.image_path) { %>
+                            <img src="<%= s.image_path %>" alt="<%= s.title %>">
+                          <% } else { %>
+                            <span>No Image</span>
+                          <% } %>
+                        </div>
+                        <div class="section-item-info">
+                          <h5><%= s.title %></h5>
+                          <p><%= s.content.length > 100 ? s.content.substring(0, 100) + '...' : s.content %></p>
+                          <span class="status-badge <%= s.is_visible ? 'completed' : 'cancelled' %>" id="section-visibility-<%= s.id %>"><%= s.is_visible ? 'Visible' : 'Hidden' %></span>
+                        </div>
+                        <div class="actions-cell section-item-actions">
+                          <button class="action-btn" onclick="moveSection(<%= s.id %>, 'up')" title="Move Up">▲</button>
+                          <button class="action-btn" onclick="moveSection(<%= s.id %>, 'down')" title="Move Down">▼</button>
+                          <button class="action-btn" onclick="openEditSectionModal(<%= s.id %>)" title="Edit Section">✎</button>
+                          <% if(currentUserRole === 'admin' || currentUserRole === 'manager') { %>
+                          <button class="action-btn btn-delete" onclick="deleteSection(<%= s.id %>)" title="Delete Section">🗑</button>
+                          <% } %>
+                        </div>
+                      </div>
+                    <% }) %>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add New Section Form -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <h3>Add New Section</h3>
+              </div>
+              <div class="panel-card-body">
+                <form id="createSectionForm" class="admin-form" enctype="multipart/form-data">
+                  <div id="createSectionError" class="alert alert-danger hidden"></div>
+                  <div class="form-group">
+                    <label for="newSectionTitle">Section Title *</label>
+                    <input type="text" id="newSectionTitle" name="title" required class="form-control" placeholder="e.g. Our Partners">
+                  </div>
+                  <div class="form-group">
+                    <label for="newSectionContent">Section Content *</label>
+                    <textarea id="newSectionContent" name="content" rows="4" required class="form-control" placeholder="Describe this section..."></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="newSectionImage">Section Image (optional)</label>
+                    <input type="file" id="newSectionImage" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control">
+                  </div>
+                  <div class="form-group form-check-group">
+                    <input type="checkbox" id="newSectionVisible" name="is_visible" value="1" checked>
+                    <label for="newSectionVisible">Visible on homepage</label>
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-block" style="margin-top:15px;">Add Section</button>
+                </form>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ==========================================
+             PANEL: VACCINE SCHEDULE
+             ========================================== -->
+        <div class="dashboard-panel" id="panel-vaccines">
+          <div class="dashboard-content-grid">
+
+            <!-- Vaccine Schedule Table -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <h3>EPI Vaccine Schedule</h3>
+              </div>
+              <div class="panel-card-body">
+                <div class="table-responsive">
+                  <table class="admin-table" id="vaccinesTable">
+                    <thead>
+                      <tr>
+                        <th>Vaccine & Dose</th>
+                        <th>Target Age</th>
+                        <th>Offset (Days)</th>
+                        <th>Diseases Prevented</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="vaccinesTableBody">
+                      <% if(vaccines.length === 0) { %>
+                        <tr class="no-records-row"><td colspan="5" style="text-align: center; color: var(--color-text-muted); padding: 30px;">No vaccine schedule entries yet.</td></tr>
+                      <% } else { %>
+                        <% vaccines.forEach(v => { %>
+                          <tr id="vaccine-row-<%= v.id %>">
+                            <td><strong><%= v.name %></strong></td>
+                            <td><%= v.age_text %></td>
+                            <td><%= v.offset_days %></td>
+                            <td style="color: var(--color-text-muted); font-size: 0.82rem;"><%= v.diseases %></td>
+                            <td>
+                              <div class="actions-cell">
+                                <button class="action-btn" onclick="openEditVaccineModal(<%= v.id %>)" title="Edit Entry">✎</button>
+                                <% if(currentUserRole === 'admin' || currentUserRole === 'manager') { %>
+                                <button class="action-btn btn-delete" onclick="deleteVaccine(<%= v.id %>)" title="Delete Entry">🗑</button>
+                                <% } %>
+                              </div>
+                            </td>
+                          </tr>
+                        <% }) %>
+                      <% } %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add New Vaccine Entry Form -->
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <h3>Add Vaccine Entry</h3>
+              </div>
+              <div class="panel-card-body">
+                <form id="createVaccineForm" class="admin-form">
+                  <div id="createVaccineError" class="alert alert-danger hidden"></div>
+                  <div class="form-group">
+                    <label for="newVaccineName">Vaccine Name & Dose *</label>
+                    <input type="text" id="newVaccineName" name="name" required class="form-control" placeholder="e.g. MR 3 (Measles & Rubella)">
+                  </div>
+                  <div class="form-group">
+                    <label for="newVaccineAgeText">Target Age Text *</label>
+                    <input type="text" id="newVaccineAgeText" name="age_text" required class="form-control" placeholder="e.g. 18 Months">
+                  </div>
+                  <div class="form-group">
+                    <label for="newVaccineOffsetDays">Offset Days from Birth *</label>
+                    <input type="number" id="newVaccineOffsetDays" name="offset_days" min="0" required class="form-control" placeholder="e.g. 540">
+                  </div>
+                  <div class="form-group">
+                    <label for="newVaccineDiseases">Diseases Prevented</label>
+                    <input type="text" id="newVaccineDiseases" name="diseases" class="form-control" placeholder="e.g. Measles, Rubella">
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-block" style="margin-top:15px;">Add Vaccine Entry</button>
+                </form>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ==========================================
              PANEL 5: USERS (ADMIN ACCOUNTS)
              ========================================== -->
         <div class="dashboard-panel" id="panel-users">
@@ -685,11 +963,14 @@
                     <div class="user-card" id="user-card-<%= u.id %>">
                       <div class="user-card-info">
                         <h5><%= u.username %></h5>
+                        <span class="role-badge role-<%= u.role %>"><%= u.role.charAt(0).toUpperCase() + u.role.slice(1) %></span>
                         <span>Created: <%= new Date(u.created_at).toLocaleDateString() %></span>
                       </div>
                       <div class="actions-cell">
-                        <button class="action-btn" onclick="openChangePasswordModal(<%= u.id %>, '<%= u.username %>')" title="Change Password">🔑</button>
-                        <% if(u.id !== currentUserId) { %>
+                        <% if(currentUserRole === 'admin' || u.id === currentUserId) { %>
+                          <button class="action-btn" onclick="openChangePasswordModal(<%= u.id %>, '<%= u.username %>')" title="Change Password">🔑</button>
+                        <% } %>
+                        <% if(currentUserRole === 'admin' && u.id !== currentUserId) { %>
                           <button class="action-btn btn-delete" onclick="deleteUser(<%= u.id %>)" title="Delete Account">🗑</button>
                         <% } %>
                       </div>
@@ -699,10 +980,11 @@
               </div>
             </div>
 
-            <!-- Create New Admin Account -->
+            <!-- Create New Admin Account (admin only) -->
+            <% if(currentUserRole === 'admin') { %>
             <div class="panel-card">
               <div class="panel-card-header">
-                <h3>Add New Administrator</h3>
+                <h3>Add New User</h3>
               </div>
               <div class="panel-card-body">
                 <form id="createAdminUserForm" class="admin-form">
@@ -715,10 +997,30 @@
                     <label for="newPassword">Password * (Min 6 chars)</label>
                     <input type="password" id="newPassword" name="password" required class="form-control" placeholder="••••••••" minlength="6">
                   </div>
+                  <div class="form-group">
+                    <label for="newUserRole">Role *</label>
+                    <select id="newUserRole" name="role" required class="form-control">
+                      <option value="editor">Editor — Edit content, change own password</option>
+                      <option value="manager">Manager — Edit & delete content, change own password</option>
+                      <option value="admin">Admin — Full access, create users</option>
+                    </select>
+                  </div>
                   <button type="submit" class="btn btn-primary btn-block" style="margin-top:15px;">Create Account</button>
                 </form>
               </div>
             </div>
+            <% } else { %>
+            <div class="panel-card">
+              <div class="panel-card-header">
+                <h3>Account Permissions</h3>
+              </div>
+              <div class="panel-card-body">
+                <p style="color: var(--color-text-muted); text-align: center; padding: 20px 0;">
+                  Only <strong>Admins</strong> can create new user accounts.
+                </p>
+              </div>
+            </div>
+            <% } %>
 
           </div>
         </div>
@@ -751,6 +1053,72 @@
       </form>
     </div>
   </div>
+
+  <!-- EDIT SECTION MODAL -->
+  <div class="modal-backdrop hidden" id="sectionModal">
+    <div class="modal-card">
+      <h3 style="font-family: var(--font-heading); margin-top:0; margin-bottom:10px;">Edit Section</h3>
+      <form id="editSectionForm" class="admin-form" enctype="multipart/form-data">
+        <input type="hidden" id="editSectionId">
+        <div id="editSectionError" class="alert alert-danger hidden"></div>
+        <div class="form-group">
+          <label for="editSectionTitle">Section Title *</label>
+          <input type="text" id="editSectionTitle" required class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="editSectionContent">Section Content *</label>
+          <textarea id="editSectionContent" rows="4" required class="form-control"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="editSectionImage">Replace Image (optional)</label>
+          <input type="file" id="editSectionImage" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control">
+        </div>
+        <div class="form-group form-check-group">
+          <input type="checkbox" id="editSectionVisible">
+          <label for="editSectionVisible">Visible on homepage</label>
+        </div>
+        <div class="admin-form-actions" style="margin-top: 20px; border:none; padding:0;">
+          <button type="button" class="btn btn-secondary" onclick="closeEditSectionModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT VACCINE MODAL -->
+  <div class="modal-backdrop hidden" id="vaccineModal">
+    <div class="modal-card">
+      <h3 style="font-family: var(--font-heading); margin-top:0; margin-bottom:10px;">Edit Vaccine Entry</h3>
+      <form id="editVaccineForm" class="admin-form">
+        <input type="hidden" id="editVaccineId">
+        <div id="editVaccineError" class="alert alert-danger hidden"></div>
+        <div class="form-group">
+          <label for="editVaccineName">Vaccine Name & Dose *</label>
+          <input type="text" id="editVaccineName" required class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="editVaccineAgeText">Target Age Text *</label>
+          <input type="text" id="editVaccineAgeText" required class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="editVaccineOffsetDays">Offset Days from Birth *</label>
+          <input type="number" id="editVaccineOffsetDays" min="0" required class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="editVaccineDiseases">Diseases Prevented</label>
+          <input type="text" id="editVaccineDiseases" class="form-control">
+        </div>
+        <div class="admin-form-actions" style="margin-top: 20px; border:none; padding:0;">
+          <button type="button" class="btn btn-secondary" onclick="closeEditVaccineModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sections & Vaccines data for admin.js (read as JSON, not executed as script) -->
+  <script type="application/json" id="sections-data"><%- JSON.stringify(sections).replace(/<\//g, '<\\/') %></script>
+  <script type="application/json" id="vaccines-data"><%- JSON.stringify(vaccines).replace(/<\//g, '<\\/') %></script>
 
   <!-- Dashboard Script dependencies -->
   <script src="/admin.js"></script>

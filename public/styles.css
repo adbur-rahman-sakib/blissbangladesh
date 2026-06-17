@@ -977,6 +977,67 @@ textarea.form-control {
   border-color: var(--color-accent-light);
 }
 
+/* Custom Homepage Sections (managed via Admin Dashboard) */
+.custom-section {
+  padding: 80px 0;
+  background-color: var(--color-white);
+}
+
+.custom-section:nth-of-type(even) {
+  background-color: var(--color-light);
+}
+
+.custom-section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.custom-section-reverse .custom-section-grid {
+  direction: rtl;
+}
+
+.custom-section-reverse .custom-section-grid > * {
+  direction: ltr;
+}
+
+.custom-section-image img {
+  width: 100%;
+  border-radius: var(--border-radius-md);
+  object-fit: cover;
+  box-shadow: var(--shadow-md);
+}
+
+.custom-section-content .section-title {
+  margin-bottom: 20px;
+}
+
+.custom-section-content p {
+  font-size: 1rem;
+  color: var(--color-muted);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.custom-section-grid:has(.custom-section-content:only-child) {
+  grid-template-columns: 1fr;
+  text-align: center;
+}
+
+.custom-section-grid:has(.custom-section-content:only-child) .custom-section-content p {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Service card images uploaded via Admin (replaces default SVG icons) */
+.service-icon-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 /* Contact Section Styling */
 .contact-section {
   padding: 80px 0;
@@ -1431,6 +1492,13 @@ textarea.form-control {
   }
   .services-grid {
     grid-template-columns: 1fr;
+  }
+  .custom-section-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .custom-section-reverse .custom-section-grid {
+    direction: ltr;
   }
   .footer-banner-grid {
     grid-template-columns: 1fr;
