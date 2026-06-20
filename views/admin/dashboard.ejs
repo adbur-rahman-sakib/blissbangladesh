@@ -3,1125 +3,1111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <title>Admin Dashboard | Bliss Bangladesh</title>
-  
-  <!-- Modern Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="/styles.css"> <!-- Base styles reset -->
-  <link rel="stylesheet" href="/admin.css"> <!-- Admin portal UI styles -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --sidebar:#0F172A;--sidebar-border:rgba(255,255,255,.06);
+      --primary:#0040A5;--primary-light:#EEF4FF;--primary-dark:#002d80;
+      --success:#16A34A;--danger:#DC2626;--warning:#D97706;--info:#0891B2;
+      --bg:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;
+      --text:#1E293B;--muted:#64748B;--subtle:#94A3B8;
+      --font-h:'Outfit',sans-serif;--font-b:'Inter',sans-serif;
+      --r:10px;--sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+    }
+    body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+
+    /* ─── Sidebar ─── */
+    .sb{width:240px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+    .sb-brand{padding:20px 18px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sidebar-border)}
+    .sb-logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .sb-name{font-family:var(--font-h);font-weight:800;font-size:.95rem;color:#fff;line-height:1.2}
+    .sb-name small{display:block;font-size:.65rem;font-weight:400;color:var(--subtle);font-family:var(--font-b)}
+    .sb-user{padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sidebar-border)}
+    .avatar{width:34px;height:34px;border-radius:50%;background:var(--primary);color:#fff;font-family:var(--font-h);font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .sb-user-info{min-width:0}
+    .sb-user-name{font-size:.84rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .role-pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .rp-admin{background:rgba(239,68,68,.2);color:#FCA5A5}
+    .rp-manager{background:rgba(0,64,165,.25);color:#93C5FD}
+    .rp-editor{background:rgba(22,163,74,.2);color:#86EFAC}
+    .sb-nav{flex:1;padding:10px 0}
+    .nav-link{display:flex;align-items:center;gap:10px;padding:10px 18px;color:var(--subtle);font-size:.84rem;font-weight:500;cursor:pointer;border-left:3px solid transparent;transition:all .15s;white-space:nowrap}
+    .nav-link:hover{background:rgba(255,255,255,.05);color:#fff}
+    .nav-link.active{background:rgba(0,64,165,.2);color:#fff;border-left-color:var(--primary)}
+    .nav-link svg{flex-shrink:0;opacity:.7}
+    .nav-link.active svg{opacity:1}
+    .nav-section{padding:14px 18px 6px;font-size:.65rem;font-weight:700;color:var(--subtle);text-transform:uppercase;letter-spacing:.8px}
+    .sb-foot{padding:14px 18px;border-top:1px solid var(--sidebar-border)}
+    .sb-logout{display:flex;align-items:center;gap:8px;color:var(--subtle);font-size:.82rem;text-decoration:none;transition:color .15s}
+    .sb-logout:hover{color:#fff}
+
+    /* ─── Main ─── */
+    .main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+    .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .topbar-title{font-family:var(--font-h);font-size:1rem;font-weight:700;color:var(--text)}
+    .topbar-actions{display:flex;align-items:center;gap:10px}
+    .view-site{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;background:var(--primary-light);color:var(--primary);font-size:.8rem;font-weight:600;text-decoration:none}
+    .content{flex:1;overflow-y:auto;padding:22px 24px}
+
+    /* ─── Toast ─── */
+    #toast{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+    .toast-item{padding:12px 18px;border-radius:10px;font-size:.84rem;font-weight:600;max-width:340px;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .2s ease;pointer-events:auto}
+    .toast-success{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7}
+    .toast-danger{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5}
+    .toast-warning{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
+    @keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+    /* ─── Panels ─── */
+    .panel{display:none}.panel.active{display:block}
+
+    /* ─── Stats grid ─── */
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:22px}
+    .stat{background:var(--card);border-radius:var(--r);padding:20px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
+    .stat-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .si-blue{background:#DBEAFE;color:var(--primary)}
+    .si-green{background:#D1FAE5;color:var(--success)}
+    .si-yellow{background:#FEF3C7;color:var(--warning)}
+    .si-red{background:#FEE2E2;color:var(--danger)}
+    .si-purple{background:#EDE9FE;color:#7C3AED}
+    .stat-info p{font-size:.72rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+    .stat-val{font-family:var(--font-h);font-size:1.8rem;font-weight:800;color:var(--text);line-height:1}
+
+    /* ─── Card ─── */
+    .card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:18px;overflow:hidden}
+    .card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .card-head h3{font-family:var(--font-h);font-size:.95rem;font-weight:700}
+    .card-body{padding:18px}
+
+    /* ─── Grid layouts ─── */
+    .g2{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .g2-eq{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    @media(max-width:900px){.g2,.g2-eq{grid-template-columns:1fr}}
+
+    /* ─── Table ─── */
+    .tbl-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.83rem}
+    thead{background:#F8FAFC}
+    th{padding:9px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap}
+    td{padding:11px 14px;border-bottom:1px solid #F8FAFC;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:#FAFAFA}
+
+    /* ─── Badges ─── */
+    .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:capitalize;white-space:nowrap}
+    .b-pending{background:#FEF3C7;color:#92400E}
+    .b-confirmed{background:#DBEAFE;color:#1E40AF}
+    .b-completed{background:#D1FAE5;color:#065F46}
+    .b-cancelled{background:#FEE2E2;color:#991B1B}
+    .b-replied{background:#EDE9FE;color:#6D28D9}
+    .b-published{background:#D1FAE5;color:#065F46}
+    .b-draft{background:#F1F5F9;color:var(--muted)}
+    .b-admin{background:rgba(239,68,68,.15);color:#B91C1C}
+    .b-manager{background:rgba(0,64,165,.12);color:var(--primary)}
+    .b-editor{background:rgba(22,163,74,.12);color:#15803D}
+
+    /* ─── Buttons ─── */
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--font-b);white-space:nowrap}
+    .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+    .btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#15803D}
+    .btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#B91C1C}
+    .btn-warning{background:var(--warning);color:#fff}.btn-warning:hover{background:#B45309}
+    .btn-ghost{background:#F1F5F9;color:var(--text)}.btn-ghost:hover{background:#E2E8F0}
+    .btn-sm{padding:5px 10px;font-size:.76rem}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .ib{width:30px;height:30px;border-radius:7px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .15s}
+    .ib-edit{background:#EEF4FF;color:var(--primary)}.ib-edit:hover{background:#DBEAFE}
+    .ib-del{background:#FEE2E2;color:var(--danger)}.ib-del:hover{background:#FECACA}
+    .ib-key{background:#FEF3C7;color:var(--warning)}.ib-key:hover{background:#FDE68A}
+    .ib-eye{background:#F0FDF4;color:var(--success)}.ib-eye:hover{background:#DCFCE7}
+    .act-row{display:flex;gap:5px;align-items:center}
+
+    /* ─── Forms ─── */
+    .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+    .fg label{font-size:.78rem;font-weight:600;color:var(--text)}
+    .fc{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:.84rem;font-family:var(--font-b);color:var(--text);background:#fff;transition:border-color .15s}
+    .fc:focus{outline:none;border-color:var(--primary)}
+    .fc[type=file]{padding:6px}
+    select.fc{cursor:pointer}
+    textarea.fc{resize:vertical}
+    .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .fgrid.g3{grid-template-columns:1fr 1fr 1fr}
+    .hl-list{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+    .hl-row{display:flex;gap:7px;align-items:center}
+    .hl-row .fc{flex:1;margin-bottom:0}
+    .btn-hl-rm{flex-shrink:0;background:none;border:1.5px solid #FECACA;color:#DC2626;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:.82rem;line-height:1;transition:background .15s}
+    .btn-hl-rm:hover{background:#FEE2E2}
+    .btn-hl-add{margin-top:8px;font-size:.78rem;padding:5px 12px;color:var(--color-primary);border:1.5px dashed var(--color-primary);background:none;border-radius:6px;cursor:pointer;font-family:var(--font-b);transition:background .15s}
+    .btn-hl-add:hover{background:#EFF6FF}
+    .span2{grid-column:1/-1}
+    .f-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+    .inline-cb{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.84rem;font-weight:500}
+
+    /* ─── Alert inline ─── */
+    .alert{padding:9px 13px;border-radius:7px;font-size:.81rem;font-weight:600;margin-bottom:12px;display:none}
+    .alert.show{display:block}
+    .alert-danger{background:#FEE2E2;color:#991B1B}
+    .alert-success{background:#D1FAE5;color:#065F46}
+
+    /* ─── Modal ─── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--card);border-radius:14px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .modal-head h3{font-family:var(--font-h);font-size:1rem;font-weight:700}
+    .modal-close{width:28px;height:28px;border-radius:6px;border:none;background:#F1F5F9;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--muted)}
+    .modal-close:hover{background:#E2E8F0}
+    .modal-body{padding:20px 22px}
+    .modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+    /* ─── Sections list ─── */
+    .sec-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .sec-item:last-child{border-bottom:none}
+    .sec-thumb{width:60px;height:44px;border-radius:6px;background:#F1F5F9;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .sec-thumb img{width:100%;height:100%;object-fit:cover}
+    .sec-info{flex:1;min-width:0}
+    .sec-info h5{font-size:.86rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sec-info p{font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+    .sec-acts{display:flex;gap:5px;flex-shrink:0}
+
+    /* ─── Inquiry cards ─── */
+    .inq-card{border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+    .inq-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+    .inq-meta h5{font-size:.88rem;font-weight:700}
+    .inq-meta p{font-size:.75rem;color:var(--muted);margin-top:2px}
+    .inq-body{font-size:.83rem;line-height:1.65;margin-bottom:10px;color:var(--text)}
+    .inq-foot{display:flex;gap:7px}
+
+    /* ─── Audit log ─── */
+    .al-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #F8FAFC}
+    .al-row:last-child{border-bottom:none}
+    .al-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;margin-top:2px}
+    .al-create{background:#D1FAE5;color:#065F46}
+    .al-update{background:#DBEAFE;color:#1D4ED8}
+    .al-delete{background:#FEE2E2;color:#991B1B}
+    .al-login{background:#EDE9FE;color:#6D28D9}
+    .al-other{background:#F1F5F9;color:var(--muted)}
+    .btn-pdf-view{background:none;border:none;padding:0;font-size:.76rem;color:var(--primary);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+    .al-info p{font-size:.82rem;color:var(--text);line-height:1.4}
+    .al-info small{font-size:.72rem;color:var(--muted)}
+
+    /* ─── Image previews ─── */
+    .img-prev{width:100%;height:90px;object-fit:cover;border-radius:7px;display:block;margin-top:6px}
+    .img-ph{background:#F1F5F9;border:2px dashed var(--border);border-radius:7px;height:72px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.76rem;margin-top:6px}
+    .img-upload-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+    .img-item label{font-size:.78rem;font-weight:600;display:block;margin-bottom:4px}
+
+    /* ─── Chart placeholders ─── */
+    .chart-ph{background:linear-gradient(135deg,var(--primary-light),#fff);border:1px dashed var(--primary);border-radius:var(--r);height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--primary);font-size:.82rem;font-weight:600;gap:6px;opacity:.7}
+
+    /* ─── Event category chips ─── */
+    .chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:600}
+    .chip-vax{background:#DBEAFE;color:#1D4ED8}
+    .chip-health{background:#D1FAE5;color:#065F46}
+    .chip-sem{background:#FEF3C7;color:#92400E}
+    .chip-work{background:#EDE9FE;color:#6D28D9}
+    .chip-com{background:#FFE4E6;color:#9F1239}
+    .chip-gen{background:#F1F5F9;color:var(--muted)}
+
+    /* Filter tabs */
+    .filter-row{display:flex;gap:6px;flex-wrap:wrap}
+    .fb{padding:4px 13px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .fb.active,.fb:hover{border-color:var(--primary);background:var(--primary);color:#fff}
+
+    /* Overview recent items */
+    .rec-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #F8FAFC;font-size:.83rem}
+    .rec-item:last-child{border-bottom:none}
+    .rec-name{font-weight:600}
+    .rec-sub{font-size:.74rem;color:var(--muted)}
+  </style>
 </head>
-<body class="admin-dashboard-body" data-role="<%= currentUserRole %>">
+<body>
 
-  <div class="admin-dashboard-layout">
-    
-    <!-- Sidebar -->
-    <aside class="admin-sidebar">
-      <div class="sidebar-brand">
-        <svg viewBox="0 0 48 48" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z" fill="#F8FAFC" />
-          <path d="M24 16.5C24 16.5 20.5 13 18.5 15C16.5 17 17.5 20.5 20.5 23L24 26L27.5 23C30.5 20.5 31.5 17 29.5 15C27.5 13 24 16.5 24 16.5Z" fill="#E53935" />
-          <path d="M12 28C14.5 33 20 36 24 36C28 36 33.5 33 36 28C36 28 32.5 30.5 28.5 28C24.5 25.5 23.5 25.5 19.5 28C15.5 30.5 12 28 12 28Z" fill="#0040A5" />
-          <circle cx="24" cy="11" r="3" fill="#0040A5" />
-        </svg>
-        <span class="sidebar-brand-name">Bliss BD Admin</span>
+<!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+<aside class="sb">
+  <div class="sb-brand">
+    <div class="sb-logo">
+      <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+        <path d="M24 16C24 16 20 12 18 14C16 16 17 20 20 23L24 26L28 23C31 20 32 16 30 14C28 12 24 16 24 16Z" fill="#fff"/>
+        <path d="M12 28C14 33 20 36 24 36C28 36 34 33 36 28C33 30 28 28 24 28C20 28 15 30 12 28Z" fill="rgba(255,255,255,.75)"/>
+      </svg>
+    </div>
+    <div class="sb-name">Bliss Bangladesh<small>Admin Panel</small></div>
+  </div>
+
+  <div class="sb-user">
+    <div class="avatar"><%= currentUser.charAt(0).toUpperCase() %></div>
+    <div class="sb-user-info">
+      <div class="sb-user-name"><%= currentUser %></div>
+      <span class="role-pill rp-<%= currentUserRole %>"><%= currentUserRole %></span>
+    </div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="nav-link active" data-panel="overview">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      Overview
+    </div>
+
+    <div class="nav-section">Operations</div>
+    <div class="nav-link" data-panel="bookings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Appointments <span id="nb-pending" style="margin-left:auto;background:#EF4444;color:#fff;border-radius:20px;font-size:.65rem;padding:1px 7px;font-weight:700"><%= bookings.filter(function(b){return b.status==='Pending'}).length %></span>
+    </div>
+    <div class="nav-link" data-panel="contacts">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Inquiries
+    </div>
+
+    <div class="nav-section">Content</div>
+    <div class="nav-link" data-panel="events">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Events
+    </div>
+    <div class="nav-link" data-panel="vaccines">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="2" x2="22" y2="6"/><line x1="17" y1="3" x2="9" y2="11"/><path d="M12 8l-6 6H3v-3l6-6"/></svg>
+      Vaccine Schedule
+    </div>
+    <div class="nav-link" data-panel="sections">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+      Page Sections
+    </div>
+    <div class="nav-link" data-panel="resources">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Resources
+    </div>
+    <div class="nav-link" data-panel="services">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Our Services
+    </div>
+    <div class="nav-link" data-panel="settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 4.6a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 .6a1.65 1.65 0 0 0 1-1.51V-1a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Site Settings
+    </div>
+
+    <div class="nav-link" data-panel="profile">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      My Profile
+    </div>
+
+    <% if(currentUserRole !== 'editor'){ %>
+    <div class="nav-section">System</div>
+    <div class="nav-link" data-panel="users">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      User Accounts
+    </div>
+    <div class="nav-link" data-panel="audit">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Audit Log
+    </div>
+    <% } %>
+  </nav>
+
+  <div class="sb-foot">
+    <a href="/admin/logout" class="sb-logout">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Log Out
+    </a>
+  </div>
+</aside>
+
+<!-- ══════════════════════ MAIN ══════════════════════ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Overview</div>
+    <div class="topbar-actions">
+      <a href="/" target="_blank" class="view-site">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        View Live Site
+      </a>
+    </div>
+  </div>
+
+  <div class="content" id="main-content">
+
+    <!-- ─────────────── OVERVIEW ─────────────── -->
+    <div id="panel-overview" class="panel active">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-icon si-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="stat-info"><p>Total Bookings</p><div class="stat-val" id="stat-bookings"><%= bookings.length %></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-icon si-yellow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div class="stat-info"><p>Pending</p><div class="stat-val" id="stat-pending"><%= bookings.filter(function(b){return b.status==='Pending'}).length %></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-icon si-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4"/></svg></div>
+          <div class="stat-info"><p>Inquiries</p><div class="stat-val" id="stat-contacts"><%= contacts.length %></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-icon si-purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          <div class="stat-info"><p>System Users</p><div class="stat-val"><%= users.length %></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-icon si-red"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h5"/></svg></div>
+          <div class="stat-info"><p>Events</p><div class="stat-val"><%= events.length %></div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-icon si-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="2" x2="22" y2="6"/><line x1="17" y1="3" x2="9" y2="11"/><path d="M12 8l-6 6H3v-3l6-6"/></svg></div>
+          <div class="stat-info"><p>Vaccines</p><div class="stat-val"><%= vaccines.length %></div></div>
+        </div>
       </div>
 
-      <div class="sidebar-user">
-        <div class="user-avatar">
-          <%= currentUser.charAt(0).toUpperCase() %>
-        </div>
-        <div class="user-meta">
-          <h5><%= currentUser %></h5>
-          <span class="role-badge role-<%= currentUserRole %>"><%= currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1) %></span>
-        </div>
-      </div>
-
-      <nav class="sidebar-menu-wrapper">
-        <ul class="sidebar-menu">
-          <li class="sidebar-item active" data-panel="overview">
-            <a class="sidebar-link">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="9"/>
-                <rect x="14" y="3" width="7" height="5"/>
-                <rect x="14" y="12" width="7" height="9"/>
-                <rect x="3" y="16" width="7" height="5"/>
-              </svg>
-              <span>Overview</span>
-            </a>
-          </li>
-          <li class="sidebar-item" data-panel="bookings">
-            <a class="sidebar-link">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              <span>Appointments</span>
-            </a>
-          </li>
-          <li class="sidebar-item" data-panel="inquiries">
-            <a class="sidebar-link">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-              <span>Inquiries</span>
-            </a>
-          </li>
-          <li class="sidebar-item" data-panel="settings">
-            <a class="sidebar-link">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-              <span>Manage Website</span>
-            </a>
-          </li>
-          <li class="sidebar-item" data-panel="sections">
-            <a class="sidebar-link">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <line x1="3" y1="9" x2="21" y2="9"/>
-                <line x1="9" y1="21" x2="9" y2="9"/>
-              </svg>
-              <span>Homepage Sections</span>
-            </a>
-          </li>
-          <li class="sidebar-item" data-panel="vaccines">
-            <a class="sidebar-link">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="2" x2="22" y2="6"/>
-                <line x1="14" y1="6" x2="18" y2="10"/>
-                <line x1="17" y1="3" x2="9" y2="11"/>
-                <path d="M12 8l-6 6H3v-3l6-6"/>
-                <line x1="11" y1="13" x2="5" y2="19"/>
-                <line x1="5" y1="19" x2="2" y2="22"/>
-              </svg>
-              <span>Vaccine Schedule</span>
-            </a>
-          </li>
-          <li class="sidebar-item" data-panel="users">
-            <a class="sidebar-link">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              <span>User Accounts</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-
-      <div class="sidebar-footer">
-        <a href="/admin/logout" class="sidebar-logout">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          <span>Log Out</span>
-        </a>
-      </div>
-    </aside>
-
-    <!-- Main Workspace -->
-    <main class="admin-main">
-      <header class="admin-header">
-        <div class="admin-header-title">
-          <h2 id="pageTitle">Overview Panel</h2>
-        </div>
-        <div class="admin-header-actions">
-          <a href="/" target="_blank" class="live-site-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/>
-              <line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            <span>View Live Site</span>
-          </a>
-        </div>
-      </header>
-
-      <div class="admin-content">
-        
-        <!-- Alerts Box -->
-        <div id="dashboardAlert" class="alert alert-success hidden"></div>
-
-        <!-- ==========================================
-             PANEL 1: OVERVIEW
-             ========================================== -->
-        <div class="dashboard-panel active" id="panel-overview">
-          <!-- Stats Widgets -->
-          <div class="overview-grid">
-            <div class="widget-card">
-              <div class="widget-info">
-                <h4>Total Bookings</h4>
-                <p class="widget-value" id="stat-total-bookings"><%= bookings.length %></p>
-              </div>
-              <div class="widget-icon-box vax">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </div>
+      <div class="g2-eq">
+        <div class="card">
+          <div class="card-head"><h3>Recent Appointments</h3><button class="btn btn-ghost btn-sm" onclick="switchPanel('bookings')">View All</button></div>
+          <div class="card-body" style="padding:0">
+            <% bookings.slice(0,6).forEach(function(b){ %>
+            <div class="rec-item" style="padding:10px 18px">
+              <div><div class="rec-name"><%= b.patient_name %></div><div class="rec-sub"><%= b.service %> · <%= b.appointment_date %></div></div>
+              <span class="badge b-<%= b.status.toLowerCase() %>"><%= b.status %></span>
             </div>
-            
-            <div class="widget-card">
-              <div class="widget-info">
-                <h4>Pending Bookings</h4>
-                <p class="widget-value" id="stat-pending-bookings">
-                  <%= bookings.filter(b => b.status === 'Pending').length %>
-                </p>
-              </div>
-              <div class="widget-icon-box msg">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 6 12 12 16 14"/>
-                </svg>
-              </div>
-            </div>
-
-            <div class="widget-card">
-              <div class="widget-info">
-                <h4>Customer Messages</h4>
-                <p class="widget-value" id="stat-total-messages"><%= contacts.length %></p>
-              </div>
-              <div class="widget-icon-box msg">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-              </div>
-            </div>
-
-            <div class="widget-card">
-              <div class="widget-info">
-                <h4>Admin Accounts</h4>
-                <p class="widget-value" id="stat-total-admins"><%= users.length %></p>
-              </div>
-              <div class="widget-icon-box usr">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                </svg>
-              </div>
-            </div>
+            <% }) %>
+            <% if(!bookings.length){ %><p style="padding:16px 18px;color:var(--muted);font-size:.83rem">No appointments yet.</p><% } %>
           </div>
-
-          <div class="dashboard-content-grid">
-            <!-- Recent Bookings Card -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Recent Appointments</h3>
-                <button class="btn btn-secondary btn-sm" onclick="switchTab('bookings')">Manage All</button>
-              </div>
-              <div class="panel-card-body">
-                <div class="table-responsive">
-                  <table class="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Patient</th>
-                        <th>Service</th>
-                        <th>Date & Time</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <% if(bookings.length === 0) { %>
-                        <tr><td colspan="5" style="text-align: center; color: var(--color-text-muted);">No appointment records yet.</td></tr>
-                      <% } else { %>
-                        <% bookings.slice(0, 5).forEach(b => { %>
-                          <tr id="booking-row-ov-<%= b.id %>">
-                            <td>
-                              <strong><%= b.patient_name %></strong><br>
-                              <span style="font-size: 0.75rem; color: var(--color-text-muted);"><%= b.phone %></span>
-                            </td>
-                            <td><%= b.service %></td>
-                            <td>
-                              <%= b.appointment_date %><br>
-                              <span style="font-size: 0.75rem; color: var(--color-text-muted);"><%= b.time_slot %></span>
-                            </td>
-                            <td>
-                              <span class="status-badge <%= b.status.toLowerCase() %>"><%= b.status %></span>
-                            </td>
-                            <td>
-                              <div class="actions-cell">
-                                <% if(b.status === 'Pending') { %>
-                                  <button class="action-btn btn-confirm" onclick="updateBookingStatus(<%= b.id %>, 'Confirmed')" title="Confirm Booking">✓</button>
-                                  <button class="action-btn btn-cancel" onclick="updateBookingStatus(<%= b.id %>, 'Cancelled')" title="Cancel Booking">×</button>
-                                <% } else if(b.status === 'Confirmed') { %>
-                                  <button class="action-btn btn-complete" onclick="updateBookingStatus(<%= b.id %>, 'Completed')" title="Mark Completed">✓</button>
-                                <% } else { %>
-                                  <span style="color: var(--color-text-muted); font-size: 0.8rem;">None</span>
-                                <% } %>
-                              </div>
-                            </td>
-                          </tr>
-                        <% }) %>
-                      <% } %>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Recent Inquiries</h3><button class="btn btn-ghost btn-sm" onclick="switchPanel('contacts')">View All</button></div>
+          <div class="card-body" style="padding:0">
+            <% contacts.slice(0,5).forEach(function(c){ %>
+            <div class="rec-item" style="padding:10px 18px">
+              <div><div class="rec-name"><%= c.name %></div><div class="rec-sub"><%= c.phone %></div></div>
+              <span class="badge b-<%= c.status.toLowerCase() %>"><%= c.status %></span>
             </div>
+            <% }) %>
+            <% if(!contacts.length){ %><p style="padding:16px 18px;color:var(--muted);font-size:.83rem">No inquiries yet.</p><% } %>
+          </div>
+        </div>
+      </div>
 
-            <!-- Recent Inquiries Panel -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Latest Inquiries</h3>
-                <button class="btn btn-secondary btn-sm" onclick="switchTab('inquiries')">Manage All</button>
-              </div>
-              <div class="panel-card-body">
-                <div class="inquiry-list">
-                  <% if(contacts.length === 0) { %>
-                    <p style="text-align: center; color: var(--color-text-muted); margin: 20px 0;">No inquiries received yet.</p>
-                  <% } else { %>
-                    <% contacts.slice(0, 3).forEach(c => { %>
-                      <div class="inquiry-item" style="padding: 12px; font-size: 0.85rem;" id="inquiry-card-ov-<%= c.id %>">
-                        <div class="inquiry-header" style="margin-bottom: 6px;">
-                          <strong><%= c.name %></strong>
-                          <span class="status-badge <%= c.status.toLowerCase() %>" style="font-size: 0.65rem;"><%= c.status %></span>
-                        </div>
-                        <p style="margin: 4px 0; font-size: 0.8rem; color: var(--color-text-muted);"><%= c.phone %></p>
-                        <p style="margin: 6px 0; color: #475569; font-style: italic;">"<%= c.message.length > 80 ? c.message.substring(0, 80) + '...' : c.message %>"</p>
-                      </div>
-                    <% }) %>
-                  <% } %>
-                </div>
-              </div>
+      <div class="g2-eq">
+        <div class="card">
+          <div class="card-head"><h3>Booking Trends</h3></div>
+          <div class="card-body">
+            <div class="chart-ph">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Chart visualization (plug in Chart.js)
             </div>
           </div>
         </div>
-
-        <!-- ==========================================
-             PANEL 2: BOOKINGS (APPOINTMENTS)
-             ========================================== -->
-        <div class="dashboard-panel" id="panel-bookings">
-          <div class="panel-card">
-            <div class="panel-card-header">
-              <h3>Manage Patient Appointments</h3>
-              <div class="filter-tabs">
-                <button class="filter-btn active" onclick="filterBookings('All')">All</button>
-                <button class="filter-btn" onclick="filterBookings('Pending')">Pending</button>
-                <button class="filter-btn" onclick="filterBookings('Confirmed')">Confirmed</button>
-                <button class="filter-btn" onclick="filterBookings('Completed')">Completed</button>
-                <button class="filter-btn" onclick="filterBookings('Cancelled')">Cancelled</button>
-              </div>
+        <div class="card">
+          <div class="card-head"><h3>Service Distribution</h3></div>
+          <div class="card-body">
+            <div class="chart-ph">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              Chart visualization (plug in Chart.js)
             </div>
-            <div class="panel-card-body">
-              <div class="table-responsive">
-                <table class="admin-table" id="bookingsTable">
-                  <thead>
-                    <tr>
-                      <th>Patient Details</th>
-                      <th>Service Required</th>
-                      <th>Date Requested</th>
-                      <th>Time Slot</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% if(bookings.length === 0) { %>
-                      <tr class="no-records-row"><td colspan="6" style="text-align: center; color: var(--color-text-muted); padding: 30px;">No appointments recorded in system.</td></tr>
-                    <% } else { %>
-                      <% bookings.forEach(b => { %>
-                        <tr id="booking-row-<%= b.id %>" class="booking-data-row" data-status="<%= b.status %>">
-                          <td>
-                            <strong><%= b.patient_name %></strong><br>
-                            <span style="font-size: 0.8rem; color: var(--color-text-muted);">Phone: <%= b.phone %></span><br>
-                            <span style="font-size: 0.75rem; color: var(--color-text-muted);">DOB: <%= b.dob || 'Not provided' %></span>
-                          </td>
-                          <td>
-                            <span style="font-weight: 500;"><%= b.service %></span>
-                          </td>
-                          <td><%= b.appointment_date %></td>
-                          <td><%= b.time_slot %></td>
-                          <td>
-                            <span class="status-badge <%= b.status.toLowerCase() %>" id="status-tag-<%= b.id %>"><%= b.status %></span>
-                          </td>
-                          <td>
-                            <div class="actions-cell">
-                              <button class="action-btn btn-confirm" onclick="updateBookingStatus(<%= b.id %>, 'Confirmed')" title="Confirm Appointment">✓</button>
-                              <button class="action-btn btn-complete" onclick="updateBookingStatus(<%= b.id %>, 'Completed')" title="Mark Completed">✔</button>
-                              <button class="action-btn btn-cancel" onclick="updateBookingStatus(<%= b.id %>, 'Cancelled')" title="Cancel Appointment">×</button>
-                              <% if(currentUserRole === 'admin' || currentUserRole === 'manager') { %>
-                              <button class="action-btn btn-delete" onclick="deleteBooking(<%= b.id %>)" title="Delete Record">🗑</button>
-                              <% } %>
-                            </div>
-                          </td>
-                        </tr>
-                      <% }) %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────────── BOOKINGS ─────────────── -->
+    <div id="panel-bookings" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h3>Appointments</h3>
+          <div class="filter-row">
+            <button class="fb active" onclick="filterBookings('All')">All</button>
+            <button class="fb" onclick="filterBookings('Pending')">Pending</button>
+            <button class="fb" onclick="filterBookings('Confirmed')">Confirmed</button>
+            <button class="fb" onclick="filterBookings('Completed')">Completed</button>
+            <button class="fb" onclick="filterBookings('Cancelled')">Cancelled</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Patient</th><th>Service</th><th>Date</th><th>Slot</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="bookings-tbody">
+            <% if(!bookings.length){ %>
+              <tr class="no-rows"><td colspan="6" style="text-align:center;padding:28px;color:var(--muted)">No appointments recorded</td></tr>
+            <% } %>
+            <% bookings.forEach(function(b){ %>
+              <tr id="brow-<%= b.id %>" class="brow" data-status="<%= b.status %>">
+                <td><strong><%= b.patient_name %></strong><br><span style="font-size:.74rem;color:var(--muted)"><%= b.phone %></span></td>
+                <td><%= b.service %></td>
+                <td><%= b.appointment_date %></td>
+                <td><%= b.time_slot %></td>
+                <td><span class="badge b-<%= b.status.toLowerCase() %>" id="bst-<%= b.id %>"><%= b.status %></span></td>
+                <td>
+                  <div class="act-row">
+                    <% if(b.status==='Pending'){ %>
+                      <button class="btn btn-success btn-sm" onclick="bookingStatus(<%= b.id %>,'Confirmed')">Confirm</button>
+                      <button class="btn btn-warning btn-sm" onclick="bookingStatus(<%= b.id %>,'Cancelled')">Cancel</button>
+                    <% } else if(b.status==='Confirmed'){ %>
+                      <button class="btn btn-primary btn-sm" onclick="bookingStatus(<%= b.id %>,'Completed')">Complete</button>
                     <% } %>
-                  </tbody>
-                </table>
+                    <% if(currentUserRole==='admin'||currentUserRole==='manager'){ %>
+                      <button class="ib ib-del" onclick="delBooking(<%= b.id %>)" title="Delete">🗑</button>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────────── CONTACTS ─────────────── -->
+    <div id="panel-contacts" class="panel">
+      <div class="card">
+        <div class="card-head"><h3>Contact Inquiries</h3></div>
+        <div class="card-body" id="contacts-list">
+          <% if(!contacts.length){ %>
+            <p style="color:var(--muted)">No inquiries received yet.</p>
+          <% } %>
+          <% contacts.forEach(function(c){ %>
+          <div class="inq-card" id="icard-<%= c.id %>">
+            <div class="inq-head">
+              <div class="inq-meta">
+                <h5><%= c.name %></h5>
+                <p><%= c.phone %><% if(c.email){ %> · <%= c.email %><% } %> · <%= new Date(c.created_at).toLocaleDateString() %></p>
+              </div>
+              <span class="badge b-<%= c.status.toLowerCase() %>" id="cst-<%= c.id %>"><%= c.status %></span>
+            </div>
+            <div class="inq-body"><%= c.message %></div>
+            <div class="inq-foot">
+              <% if(c.status==='Pending'){ %>
+                <button class="btn btn-primary btn-sm" id="cbtn-<%= c.id %>" onclick="contactStatus(<%= c.id %>,'Replied')">Mark Replied</button>
+              <% } %>
+              <% if(currentUserRole==='admin'||currentUserRole==='manager'){ %>
+                <button class="btn btn-danger btn-sm" onclick="delContact(<%= c.id %>)">Delete</button>
+              <% } %>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────────── EVENTS ─────────────── -->
+    <div id="panel-events" class="panel">
+      <div class="g2">
+        <div>
+          <div class="card">
+            <div class="card-head"><h3>Events</h3><button class="btn btn-primary btn-sm" onclick="openEventModal(null)">+ New Event</button></div>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="events-tbody">
+                <% if(!events.length){ %>
+                  <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No events yet</td></tr>
+                <% } %>
+                <% events.forEach(function(ev){ %>
+                  <tr id="evrow-<%= ev.id %>">
+                    <td><strong style="font-size:.84rem"><%= ev.title %></strong></td>
+                    <td><%
+                      var catClass = {
+                        'Vaccination Drive':'chip-vax','Health Camp':'chip-health',
+                        'Seminar':'chip-sem','Workshop':'chip-work','Community Outreach':'chip-com'
+                      }[ev.category]||'chip-gen';
+                    %><span class="chip <%= catClass %>"><%= ev.category %></span></td>
+                    <td style="font-size:.8rem;color:var(--muted)"><%= ev.event_date %></td>
+                    <td><span class="badge <%= ev.is_published?'b-published':'b-draft' %>" id="evst-<%= ev.id %>"><%= ev.is_published?'Published':'Draft' %></span></td>
+                    <td>
+                      <div class="act-row">
+                        <button class="ib ib-eye" onclick="togglePublish(<%= ev.id %>)" title="Toggle Publish">⊙</button>
+                        <button class="ib ib-edit" onclick="openEventModal(<%= ev.id %>)" title="Edit">✎</button>
+                        <% if(currentUserRole==='admin'||currentUserRole==='manager'){ %>
+                          <button class="ib ib-del" onclick="delEvent(<%= ev.id %>)" title="Delete">🗑</button>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-head"><h3>Quick Stats</h3></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;font-size:.84rem"><span style="color:var(--muted)">Total Events</span><strong><%= events.length %></strong></div>
+                <div style="display:flex;justify-content:space-between;font-size:.84rem"><span style="color:var(--muted)">Published</span><strong style="color:var(--success)"><%= events.filter(function(e){return e.is_published}).length %></strong></div>
+                <div style="display:flex;justify-content:space-between;font-size:.84rem"><span style="color:var(--muted)">Drafts</span><strong style="color:var(--warning)"><%= events.filter(function(e){return !e.is_published}).length %></strong></div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- ==========================================
-             PANEL 3: INQUIRIES
-             ========================================== -->
-        <div class="dashboard-panel" id="panel-inquiries">
-          <div class="panel-card">
-            <div class="panel-card-header">
-              <h3>Customer Messages & Inquiries</h3>
-            </div>
-            <div class="panel-card-body">
-              <div class="inquiry-list" id="inquiriesContainer">
-                <% if(contacts.length === 0) { %>
-                  <p id="noInquiriesText" style="text-align: center; color: var(--color-text-muted); padding: 40px;">No messages received through contact forms yet.</p>
-                <% } else { %>
-                  <% contacts.forEach(c => { %>
-                    <div class="inquiry-item" id="inquiry-card-<%= c.id %>">
-                      <div class="inquiry-header">
-                        <div class="inquiry-meta">
-                          <h5><%= c.name %></h5>
-                          <div class="contact-details">
-                            <span><strong>Phone:</strong> <%= c.phone %></span>
-                            <% if(c.email) { %>
-                              <span><strong>Email:</strong> <%= c.email %></span>
-                            <% } %>
-                          </div>
-                        </div>
-                        <div style="text-align: right;">
-                          <span class="status-badge <%= c.status.toLowerCase() %>" id="inquiry-status-<%= c.id %>"><%= c.status %></span><br>
-                          <span class="inquiry-date" style="display:inline-block; margin-top:5px;"><%= new Date(c.created_at).toLocaleDateString() %></span>
-                        </div>
-                      </div>
-                      <div class="inquiry-body">
-                        <%= c.message %>
-                      </div>
-                      <div class="inquiry-footer">
-                        <% if(c.status === 'Pending') { %>
-                          <button class="btn btn-secondary btn-sm" id="btn-read-<%= c.id %>" onclick="updateInquiryStatus(<%= c.id %>, 'Replied')">Mark Replied</button>
-                        <% } %>
-                        <% if(currentUserRole === 'admin' || currentUserRole === 'manager') { %>
-                        <button class="btn btn-danger btn-sm" onclick="deleteInquiry(<%= c.id %>)" style="background-color: var(--color-status-cancelled); border:none;">Delete Message</button>
-                        <% } %>
-                      </div>
+    <!-- ─────────────── VACCINES ─────────────── -->
+    <div id="panel-vaccines" class="panel">
+      <div class="g2">
+        <div class="card">
+          <div class="card-head"><h3>EPI Vaccine Schedule</h3><button class="btn btn-primary btn-sm" onclick="openVaccineModal(null)">+ Add Entry</button></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Vaccine</th><th>Age</th><th>Days</th><th>Diseases</th><th>Actions</th></tr></thead>
+              <tbody id="vaccines-tbody">
+              <% if(!vaccines.length){ %>
+                <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No entries yet</td></tr>
+              <% } %>
+              <% vaccines.forEach(function(v, vIdx){ %>
+                <tr id="vrow-<%= v.id %>">
+                  <td style="color:var(--muted);font-size:.78rem;font-weight:600"><%= vIdx+1 %></td>
+                  <td><strong style="font-size:.84rem"><%= v.name %></strong></td>
+                  <td><%= v.age_text %></td>
+                  <td><span class="badge" style="background:#EEF4FF;color:var(--primary);font-size:.76rem"><%= v.offset_days %>d</span></td>
+                  <td style="font-size:.76rem;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= v.diseases %></td>
+                  <td>
+                    <div class="act-row">
+                      <button class="ib ib-edit" onclick="moveVaccine(<%= v.id %>,'up')" title="Move Up (same-day group)">↑</button>
+                      <button class="ib ib-edit" onclick="moveVaccine(<%= v.id %>,'down')" title="Move Down (same-day group)">↓</button>
+                      <button class="ib ib-edit" onclick="openVaccineModal(<%= v.id %>)" title="Edit">✎</button>
+                      <% if(currentUserRole==='admin'||currentUserRole==='manager'){ %>
+                        <button class="ib ib-del" onclick="delVaccine(<%= v.id %>)" title="Delete">🗑</button>
+                      <% } %>
                     </div>
-                  <% }) %>
+                  </td>
+                </tr>
+              <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>EPI Coverage</h3></div>
+          <div class="card-body">
+            <div class="chart-ph">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Age group distribution
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────────── SECTIONS ─────────────── -->
+    <div id="panel-sections" class="panel">
+      <div class="g2">
+        <div class="card">
+          <div class="card-head"><h3>Homepage Sections</h3><button class="btn btn-primary btn-sm" onclick="openSectionModal(null)">+ Add Section</button></div>
+          <div class="card-body" id="sections-list">
+            <% if(!sections.length){ %><p style="color:var(--muted)">No custom sections yet.</p><% } %>
+            <% sections.forEach(function(s){ %>
+            <div class="sec-item" id="srow-<%= s.id %>">
+              <div class="sec-thumb">
+                <% if(s.image_path){ %><img src="<%= s.image_path %>" alt=""><% } else { %>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <% } %>
+              </div>
+              <div class="sec-info">
+                <h5><%= s.title %></h5>
+                <p><%= s.content.substring(0,70) %>...</p>
+                <span class="badge" style="margin-top:4px;background:<%= s.is_visible?'#D1FAE5':'#FEE2E2' %>;color:<%= s.is_visible?'#065F46':'#991B1B' %>"><%= s.is_visible?'Visible':'Hidden' %></span>
+              </div>
+              <div class="sec-acts">
+                <button class="ib ib-edit" onclick="moveSection(<%= s.id %>,'up')" title="Move Up">↑</button>
+                <button class="ib ib-edit" onclick="moveSection(<%= s.id %>,'down')" title="Move Down">↓</button>
+                <button class="ib ib-edit" onclick="openSectionModal(<%= s.id %>)" title="Edit">✎</button>
+                <% if(currentUserRole==='admin'||currentUserRole==='manager'){ %>
+                  <button class="ib ib-del" onclick="delSection(<%= s.id %>)" title="Delete">🗑</button>
                 <% } %>
               </div>
             </div>
+            <% }) %>
           </div>
         </div>
-
-        <!-- ==========================================
-             PANEL 4: SETTINGS (MANAGE WEBSITE DATA)
-             ========================================== -->
-        <div class="dashboard-panel" id="panel-settings">
-
-          <!-- Site Images & Media -->
-          <div class="panel-card">
-            <div class="panel-card-header">
-              <h3>Site Images & Media</h3>
-            </div>
-            <div class="panel-card-body">
-              <div class="image-upload-grid">
-                <!-- Hero Banner Image -->
-                <div class="image-upload-item">
-                  <label>Hero Banner Image</label>
-                  <div class="image-preview-box" id="preview-box-hero_image">
-                    <% if (settings.hero_image) { %>
-                      <img src="<%= settings.hero_image %>" alt="Hero Banner">
-                    <% } else { %>
-                      <span class="no-image-text">No image set</span>
-                    <% } %>
-                  </div>
-                  <form class="image-upload-form" data-field="hero_image">
-                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
-                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
-                  </form>
-                </div>
-
-                <!-- EPI Vaccination Card Image/Icon -->
-                <div class="image-upload-item">
-                  <label>EPI Vaccination Card Image</label>
-                  <div class="image-preview-box" id="preview-box-service_vax_image">
-                    <% if (settings.service_vax_image) { %>
-                      <img src="<%= settings.service_vax_image %>" alt="EPI Vaccination">
-                    <% } else { %>
-                      <span class="no-image-text">Using default icon</span>
-                    <% } %>
-                  </div>
-                  <form class="image-upload-form" data-field="service_vax_image">
-                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
-                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
-                  </form>
-                </div>
-
-                <!-- Family Planning Card Image/Icon -->
-                <div class="image-upload-item">
-                  <label>Family Planning Card Image</label>
-                  <div class="image-preview-box" id="preview-box-service_fp_image">
-                    <% if (settings.service_fp_image) { %>
-                      <img src="<%= settings.service_fp_image %>" alt="Family Planning">
-                    <% } else { %>
-                      <span class="no-image-text">Using default icon</span>
-                    <% } %>
-                  </div>
-                  <form class="image-upload-form" data-field="service_fp_image">
-                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
-                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
-                  </form>
-                </div>
-
-                <!-- Antenatal Care Card Image/Icon -->
-                <div class="image-upload-item">
-                  <label>Antenatal Care Card Image</label>
-                  <div class="image-preview-box" id="preview-box-service_anc_image">
-                    <% if (settings.service_anc_image) { %>
-                      <img src="<%= settings.service_anc_image %>" alt="Antenatal Care">
-                    <% } else { %>
-                      <span class="no-image-text">Using default icon</span>
-                    <% } %>
-                  </div>
-                  <form class="image-upload-form" data-field="service_anc_image">
-                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
-                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
-                  </form>
-                </div>
-
-                <!-- Autism Support Card Image/Icon -->
-                <div class="image-upload-item">
-                  <label>Autism Support Card Image</label>
-                  <div class="image-preview-box" id="preview-box-service_autism_image">
-                    <% if (settings.service_autism_image) { %>
-                      <img src="<%= settings.service_autism_image %>" alt="Autism Support">
-                    <% } else { %>
-                      <span class="no-image-text">Using default icon</span>
-                    <% } %>
-                  </div>
-                  <form class="image-upload-form" data-field="service_autism_image">
-                    <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control" required>
-                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
-                  </form>
-                </div>
-              </div>
-              <p class="image-upload-hint">Allowed formats: JPG, PNG, WEBP, GIF. Maximum size: 5MB.</p>
+        <div class="card">
+          <div class="card-head"><h3>Visibility Summary</h3></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;font-size:.84rem"><span style="color:var(--muted)">Total Sections</span><strong><%= sections.length %></strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:.84rem"><span style="color:var(--muted)">Visible</span><strong style="color:var(--success)"><%= sections.filter(function(s){return s.is_visible}).length %></strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:.84rem"><span style="color:var(--muted)">Hidden</span><strong style="color:var(--danger)"><%= sections.filter(function(s){return !s.is_visible}).length %></strong></div>
             </div>
           </div>
-
-          <form id="websiteSettingsForm" class="admin-form">
-
-            <!-- Hero Settings -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Hero Banner Configuration</h3>
-              </div>
-              <div class="panel-card-body">
-                <div class="form-group">
-                  <label for="hero_title">Hero Title Text (supports HTML like &lt;br&gt;)</label>
-                  <input type="text" id="hero_title" name="hero_title" value="<%= settings.hero_title %>" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="hero_description">Hero Description Text</label>
-                  <textarea id="hero_description" name="hero_description" rows="3" class="form-control" required><%= settings.hero_description %></textarea>
-                </div>
-              </div>
-            </div>
-
-            <!-- About Us Settings -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>About Us Page Section</h3>
-              </div>
-              <div class="panel-card-body">
-                <div class="form-group">
-                  <label for="about_subtitle">Section Subtitle</label>
-                  <input type="text" id="about_subtitle" name="about_subtitle" value="<%= settings.about_subtitle %>" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="about_paragraph_1">About Description Paragraph 1</label>
-                  <textarea id="about_paragraph_1" name="about_paragraph_1" rows="3" class="form-control" required><%= settings.about_paragraph_1 %></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="about_paragraph_2">About Description Paragraph 2</label>
-                  <textarea id="about_paragraph_2" name="about_paragraph_2" rows="3" class="form-control" required><%= settings.about_paragraph_2 %></textarea>
-                </div>
-                
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="stat_children">Children Immunized Stat</label>
-                    <input type="text" id="stat_children" name="stat_children" value="<%= settings.stat_children %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="stat_staff">Staff Strength Stat</label>
-                    <input type="text" id="stat_staff" name="stat_staff" value="<%= settings.stat_staff %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="stat_satisfaction">Satisfaction Rate Stat</label>
-                    <input type="text" id="stat_satisfaction" name="stat_satisfaction" value="<%= settings.stat_satisfaction %>" class="form-control" required>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label for="feature_epi_desc">Govt Authorized Feature Summary</label>
-                  <input type="text" id="feature_epi_desc" name="feature_epi_desc" value="<%= settings.feature_epi_desc %>" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="feature_confidentiality_desc">100% Confidentiality Feature Summary</label>
-                  <input type="text" id="feature_confidentiality_desc" name="feature_confidentiality_desc" value="<%= settings.feature_confidentiality_desc %>" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="feature_affordability_desc">Affordable Plans Feature Summary</label>
-                  <input type="text" id="feature_affordability_desc" name="feature_affordability_desc" value="<%= settings.feature_affordability_desc %>" class="form-control" required>
-                </div>
-              </div>
-            </div>
-
-            <!-- Service Overviews -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Services Box Overviews</h3>
-              </div>
-              <div class="panel-card-body">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="service_vax_desc">EPI Vaccination Service Overview Text</label>
-                    <textarea id="service_vax_desc" name="service_vax_desc" rows="2" class="form-control" required><%= settings.service_vax_desc %></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_fp_desc">Family Planning Service Overview Text</label>
-                    <textarea id="service_fp_desc" name="service_fp_desc" rows="2" class="form-control" required><%= settings.service_fp_desc %></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_anc_desc">Antenatal Care Service Overview Text</label>
-                    <textarea id="service_anc_desc" name="service_anc_desc" rows="2" class="form-control" required><%= settings.service_anc_desc %></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_autism_desc">Autism Support Service Overview Text</label>
-                    <textarea id="service_autism_desc" name="service_autism_desc" rows="2" class="form-control" required><%= settings.service_autism_desc %></textarea>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Service Specific Modals details (Advanced) -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Service Modals Detail Content</h3>
-              </div>
-              <div class="panel-card-body">
-                
-                <!-- Vaccination Modal Content -->
-                <h4 class="form-section-title">EPI Vaccination Modal Details</h4>
-                <div class="form-group">
-                  <label for="service_vax_title">Modal Title</label>
-                  <input type="text" id="service_vax_title" name="service_vax_title" value="<%= settings.service_vax_title %>" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="service_vax_details">Modal Detailed Paragraph</label>
-                  <textarea id="service_vax_details" name="service_vax_details" rows="3" class="form-control" required><%= settings.service_vax_details %></textarea>
-                </div>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="service_vax_hl_1">Highlight 1</label>
-                    <input type="text" id="service_vax_hl_1" name="service_vax_hl_1" value="<%= settings.service_vax_hl_1 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_vax_hl_2">Highlight 2</label>
-                    <input type="text" id="service_vax_hl_2" name="service_vax_hl_2" value="<%= settings.service_vax_hl_2 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_vax_hl_3">Highlight 3</label>
-                    <input type="text" id="service_vax_hl_3" name="service_vax_hl_3" value="<%= settings.service_vax_hl_3 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_vax_hl_4">Highlight 4</label>
-                    <input type="text" id="service_vax_hl_4" name="service_vax_hl_4" value="<%= settings.service_vax_hl_4 %>" class="form-control" required>
-                  </div>
-                </div>
-
-                <!-- Family Planning Modal Content -->
-                <h4 class="form-section-title">Family Planning Modal Details</h4>
-                <div class="form-group">
-                  <label for="service_fp_title">Modal Title</label>
-                  <input type="text" id="service_fp_title" name="service_fp_title" value="<%= settings.service_fp_title %>" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="service_fp_details">Modal Detailed Paragraph</label>
-                  <textarea id="service_fp_details" name="service_fp_details" rows="3" class="form-control" required><%= settings.service_fp_details %></textarea>
-                </div>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="service_fp_hl_1">Highlight 1</label>
-                    <input type="text" id="service_fp_hl_1" name="service_fp_hl_1" value="<%= settings.service_fp_hl_1 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_fp_hl_2">Highlight 2</label>
-                    <input type="text" id="service_fp_hl_2" name="service_fp_hl_2" value="<%= settings.service_fp_hl_2 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_fp_hl_3">Highlight 3</label>
-                    <input type="text" id="service_fp_hl_3" name="service_fp_hl_3" value="<%= settings.service_fp_hl_3 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_fp_hl_4">Highlight 4</label>
-                    <input type="text" id="service_fp_hl_4" name="service_fp_hl_4" value="<%= settings.service_fp_hl_4 %>" class="form-control" required>
-                  </div>
-                </div>
-
-                <!-- Antenatal Modal Content -->
-                <h4 class="form-section-title">Antenatal Care Modal Details</h4>
-                <div class="form-group">
-                  <label for="service_anc_title">Modal Title</label>
-                  <input type="text" id="service_anc_title" name="service_anc_title" value="<%= settings.service_anc_title %>" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="service_anc_details">Modal Detailed Paragraph</label>
-                  <textarea id="service_anc_details" name="service_anc_details" rows="3" class="form-control" required><%= settings.service_anc_details %></textarea>
-                </div>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="service_anc_hl_1">Highlight 1</label>
-                    <input type="text" id="service_anc_hl_1" name="service_anc_hl_1" value="<%= settings.service_anc_hl_1 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_anc_hl_2">Highlight 2</label>
-                    <input type="text" id="service_anc_hl_2" name="service_anc_hl_2" value="<%= settings.service_anc_hl_2 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_anc_hl_3">Highlight 3</label>
-                    <input type="text" id="service_anc_hl_3" name="service_anc_hl_3" value="<%= settings.service_anc_hl_3 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_anc_hl_4">Highlight 4</label>
-                    <input type="text" id="service_anc_hl_4" name="service_anc_hl_4" value="<%= settings.service_anc_hl_4 %>" class="form-control" required>
-                  </div>
-                </div>
-
-                <!-- Autism Modal Content -->
-                <h4 class="form-section-title">Autism Support Modal Details</h4>
-                <div class="form-group">
-                  <label for="service_autism_title">Modal Title</label>
-                  <input type="text" id="service_autism_title" name="service_autism_title" value="<%= settings.service_autism_title %>" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="service_autism_details">Modal Detailed Paragraph</label>
-                  <textarea id="service_autism_details" name="service_autism_details" rows="3" class="form-control" required><%= settings.service_autism_details %></textarea>
-                </div>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="service_autism_hl_1">Highlight 1</label>
-                    <input type="text" id="service_autism_hl_1" name="service_autism_hl_1" value="<%= settings.service_autism_hl_1 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_autism_hl_2">Highlight 2</label>
-                    <input type="text" id="service_autism_hl_2" name="service_autism_hl_2" value="<%= settings.service_autism_hl_2 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_autism_hl_3">Highlight 3</label>
-                    <input type="text" id="service_autism_hl_3" name="service_autism_hl_3" value="<%= settings.service_autism_hl_3 %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="service_autism_hl_4">Highlight 4</label>
-                    <input type="text" id="service_autism_hl_4" name="service_autism_hl_4" value="<%= settings.service_autism_hl_4 %>" class="form-control" required>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- Contact Information Settings -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Contact & Center Settings</h3>
-              </div>
-              <div class="panel-card-body">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="contact_phone">Primary Phone Number</label>
-                    <input type="text" id="contact_phone" name="contact_phone" value="<%= settings.contact_phone %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="contact_phone_alt">Alternate Phone Number</label>
-                    <input type="text" id="contact_phone_alt" name="contact_phone_alt" value="<%= settings.contact_phone_alt %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="contact_email">Primary Email</label>
-                    <input type="email" id="contact_email" name="contact_email" value="<%= settings.contact_email %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="contact_email_alt">Support Email</label>
-                    <input type="email" id="contact_email_alt" name="contact_email_alt" value="<%= settings.contact_email_alt %>" class="form-control" required>
-                  </div>
-                </div>
-                
-                <div class="form-group">
-                  <label for="contact_address">Physical Address</label>
-                  <input type="text" id="contact_address" name="contact_address" value="<%= settings.contact_address %>" class="form-control" required>
-                </div>
-
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="opening_hours_weekdays">Opening Hours (Weekdays)</label>
-                    <input type="text" id="opening_hours_weekdays" name="opening_hours_weekdays" value="<%= settings.opening_hours_weekdays %>" class="form-control" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="opening_hours_weekend">Opening Hours (Weekend)</label>
-                    <input type="text" id="opening_hours_weekend" name="opening_hours_weekend" value="<%= settings.opening_hours_weekend %>" class="form-control" required>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Form Action Submit -->
-            <div class="admin-form-actions">
-              <button type="submit" class="btn btn-primary" id="saveSettingsBtn">Save All Settings</button>
-            </div>
-
-          </form>
         </div>
-
-        <!-- ==========================================
-             PANEL: HOMEPAGE SECTIONS (CUSTOM CONTENT BLOCKS)
-             ========================================== -->
-        <div class="dashboard-panel" id="panel-sections">
-          <div class="dashboard-content-grid">
-
-            <!-- List of Existing Sections -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Custom Homepage Sections</h3>
-              </div>
-              <div class="panel-card-body">
-                <div class="section-list" id="sectionsContainer">
-                  <% if(sections.length === 0) { %>
-                    <p id="noSectionsText" style="text-align: center; color: var(--color-text-muted); padding: 30px;">No custom sections created yet. Add one using the form.</p>
-                  <% } else { %>
-                    <% sections.forEach(s => { %>
-                      <div class="section-item" id="section-item-<%= s.id %>">
-                        <div class="section-thumb">
-                          <% if (s.image_path) { %>
-                            <img src="<%= s.image_path %>" alt="<%= s.title %>">
-                          <% } else { %>
-                            <span>No Image</span>
-                          <% } %>
-                        </div>
-                        <div class="section-item-info">
-                          <h5><%= s.title %></h5>
-                          <p><%= s.content.length > 100 ? s.content.substring(0, 100) + '...' : s.content %></p>
-                          <span class="status-badge <%= s.is_visible ? 'completed' : 'cancelled' %>" id="section-visibility-<%= s.id %>"><%= s.is_visible ? 'Visible' : 'Hidden' %></span>
-                        </div>
-                        <div class="actions-cell section-item-actions">
-                          <button class="action-btn" onclick="moveSection(<%= s.id %>, 'up')" title="Move Up">▲</button>
-                          <button class="action-btn" onclick="moveSection(<%= s.id %>, 'down')" title="Move Down">▼</button>
-                          <button class="action-btn" onclick="openEditSectionModal(<%= s.id %>)" title="Edit Section">✎</button>
-                          <% if(currentUserRole === 'admin' || currentUserRole === 'manager') { %>
-                          <button class="action-btn btn-delete" onclick="deleteSection(<%= s.id %>)" title="Delete Section">🗑</button>
-                          <% } %>
-                        </div>
-                      </div>
-                    <% }) %>
-                  <% } %>
-                </div>
-              </div>
-            </div>
-
-            <!-- Add New Section Form -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Add New Section</h3>
-              </div>
-              <div class="panel-card-body">
-                <form id="createSectionForm" class="admin-form" enctype="multipart/form-data">
-                  <div id="createSectionError" class="alert alert-danger hidden"></div>
-                  <div class="form-group">
-                    <label for="newSectionTitle">Section Title *</label>
-                    <input type="text" id="newSectionTitle" name="title" required class="form-control" placeholder="e.g. Our Partners">
-                  </div>
-                  <div class="form-group">
-                    <label for="newSectionContent">Section Content *</label>
-                    <textarea id="newSectionContent" name="content" rows="4" required class="form-control" placeholder="Describe this section..."></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label for="newSectionImage">Section Image (optional)</label>
-                    <input type="file" id="newSectionImage" name="image" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control">
-                  </div>
-                  <div class="form-group form-check-group">
-                    <input type="checkbox" id="newSectionVisible" name="is_visible" value="1" checked>
-                    <label for="newSectionVisible">Visible on homepage</label>
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-block" style="margin-top:15px;">Add Section</button>
-                </form>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- ==========================================
-             PANEL: VACCINE SCHEDULE
-             ========================================== -->
-        <div class="dashboard-panel" id="panel-vaccines">
-          <div class="dashboard-content-grid">
-
-            <!-- Vaccine Schedule Table -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>EPI Vaccine Schedule</h3>
-              </div>
-              <div class="panel-card-body">
-                <div class="table-responsive">
-                  <table class="admin-table" id="vaccinesTable">
-                    <thead>
-                      <tr>
-                        <th>Vaccine & Dose</th>
-                        <th>Target Age</th>
-                        <th>Offset (Days)</th>
-                        <th>Diseases Prevented</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="vaccinesTableBody">
-                      <% if(vaccines.length === 0) { %>
-                        <tr class="no-records-row"><td colspan="5" style="text-align: center; color: var(--color-text-muted); padding: 30px;">No vaccine schedule entries yet.</td></tr>
-                      <% } else { %>
-                        <% vaccines.forEach(v => { %>
-                          <tr id="vaccine-row-<%= v.id %>">
-                            <td><strong><%= v.name %></strong></td>
-                            <td><%= v.age_text %></td>
-                            <td><%= v.offset_days %></td>
-                            <td style="color: var(--color-text-muted); font-size: 0.82rem;"><%= v.diseases %></td>
-                            <td>
-                              <div class="actions-cell">
-                                <button class="action-btn" onclick="openEditVaccineModal(<%= v.id %>)" title="Edit Entry">✎</button>
-                                <% if(currentUserRole === 'admin' || currentUserRole === 'manager') { %>
-                                <button class="action-btn btn-delete" onclick="deleteVaccine(<%= v.id %>)" title="Delete Entry">🗑</button>
-                                <% } %>
-                              </div>
-                            </td>
-                          </tr>
-                        <% }) %>
-                      <% } %>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <!-- Add New Vaccine Entry Form -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Add Vaccine Entry</h3>
-              </div>
-              <div class="panel-card-body">
-                <form id="createVaccineForm" class="admin-form">
-                  <div id="createVaccineError" class="alert alert-danger hidden"></div>
-                  <div class="form-group">
-                    <label for="newVaccineName">Vaccine Name & Dose *</label>
-                    <input type="text" id="newVaccineName" name="name" required class="form-control" placeholder="e.g. MR 3 (Measles & Rubella)">
-                  </div>
-                  <div class="form-group">
-                    <label for="newVaccineAgeText">Target Age Text *</label>
-                    <input type="text" id="newVaccineAgeText" name="age_text" required class="form-control" placeholder="e.g. 18 Months">
-                  </div>
-                  <div class="form-group">
-                    <label for="newVaccineOffsetDays">Offset Days from Birth *</label>
-                    <input type="number" id="newVaccineOffsetDays" name="offset_days" min="0" required class="form-control" placeholder="e.g. 540">
-                  </div>
-                  <div class="form-group">
-                    <label for="newVaccineDiseases">Diseases Prevented</label>
-                    <input type="text" id="newVaccineDiseases" name="diseases" class="form-control" placeholder="e.g. Measles, Rubella">
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-block" style="margin-top:15px;">Add Vaccine Entry</button>
-                </form>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- ==========================================
-             PANEL 5: USERS (ADMIN ACCOUNTS)
-             ========================================== -->
-        <div class="dashboard-panel" id="panel-users">
-          <div class="dashboard-content-grid">
-            
-            <!-- List of Current Admin Users -->
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Admin System Accounts</h3>
-              </div>
-              <div class="panel-card-body">
-                <div class="user-card-list" id="usersContainer">
-                  <% users.forEach(u => { %>
-                    <div class="user-card" id="user-card-<%= u.id %>">
-                      <div class="user-card-info">
-                        <h5><%= u.username %></h5>
-                        <span class="role-badge role-<%= u.role %>"><%= u.role.charAt(0).toUpperCase() + u.role.slice(1) %></span>
-                        <span>Created: <%= new Date(u.created_at).toLocaleDateString() %></span>
-                      </div>
-                      <div class="actions-cell">
-                        <% if(currentUserRole === 'admin' || u.id === currentUserId) { %>
-                          <button class="action-btn" onclick="openChangePasswordModal(<%= u.id %>, '<%= u.username %>')" title="Change Password">🔑</button>
-                        <% } %>
-                        <% if(currentUserRole === 'admin' && u.id !== currentUserId) { %>
-                          <button class="action-btn btn-delete" onclick="deleteUser(<%= u.id %>)" title="Delete Account">🗑</button>
-                        <% } %>
-                      </div>
-                    </div>
-                  <% }) %>
-                </div>
-              </div>
-            </div>
-
-            <!-- Create New Admin Account (admin only) -->
-            <% if(currentUserRole === 'admin') { %>
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Add New User</h3>
-              </div>
-              <div class="panel-card-body">
-                <form id="createAdminUserForm" class="admin-form">
-                  <div id="createUserError" class="alert alert-danger hidden"></div>
-                  <div class="form-group">
-                    <label for="newUsername">Username *</label>
-                    <input type="text" id="newUsername" name="username" required class="form-control" placeholder="e.g. nurse_rahima">
-                  </div>
-                  <div class="form-group">
-                    <label for="newPassword">Password * (Min 6 chars)</label>
-                    <input type="password" id="newPassword" name="password" required class="form-control" placeholder="••••••••" minlength="6">
-                  </div>
-                  <div class="form-group">
-                    <label for="newUserRole">Role *</label>
-                    <select id="newUserRole" name="role" required class="form-control">
-                      <option value="editor">Editor — Edit content, change own password</option>
-                      <option value="manager">Manager — Edit & delete content, change own password</option>
-                      <option value="admin">Admin — Full access, create users</option>
-                    </select>
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-block" style="margin-top:15px;">Create Account</button>
-                </form>
-              </div>
-            </div>
-            <% } else { %>
-            <div class="panel-card">
-              <div class="panel-card-header">
-                <h3>Account Permissions</h3>
-              </div>
-              <div class="panel-card-body">
-                <p style="color: var(--color-text-muted); text-align: center; padding: 20px 0;">
-                  Only <strong>Admins</strong> can create new user accounts.
-                </p>
-              </div>
-            </div>
-            <% } %>
-
-          </div>
-        </div>
-
       </div>
-    </main>
-  </div>
+    </div>
 
-  <!-- PASSWORD CHANGE MODAL -->
-  <div class="modal-backdrop hidden" id="pwdModal">
-    <div class="modal-card">
-      <h3 style="font-family: var(--font-heading); margin-top:0; margin-bottom:10px;">Change Account Password</h3>
-      <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:20px;">
-        Setting new password for admin user: <strong id="pwdModalUser"></strong>
-      </p>
-      
-      <form id="changePasswordForm" class="admin-form">
-        <input type="hidden" id="pwdModalUserId">
-        <div id="pwdModalError" class="alert alert-danger hidden"></div>
-        
-        <div class="form-group">
-          <label for="newPasswordVal">New Password * (Min 6 chars)</label>
-          <input type="password" id="newPasswordVal" required class="form-control" placeholder="••••••••" minlength="6">
+    <!-- ─────────────── RESOURCES ─────────────── -->
+    <div id="panel-resources" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h3>Health Resources & Publications</h3>
+          <button class="btn btn-primary btn-sm" onclick="openResourceModal(null)">+ Add Resource</button>
         </div>
-        
-        <div class="admin-form-actions" style="margin-top: 20px; border:none; padding:0;">
-          <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Update Password</button>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Title</th><th>Type</th><th>File</th><th>Visible</th><th>Actions</th></tr></thead>
+            <tbody id="resources-tbody">
+            <% if(!resources.length){ %>
+              <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted)">No resources yet. Click "+ Add Resource" to create one.</td></tr>
+            <% } %>
+            <% resources.forEach(function(rc){ %>
+              <tr id="rcrow-<%= rc.id %>">
+                <td><strong style="font-size:.85rem"><%= rc.title %></strong><% if(rc.description){ %><br><span style="font-size:.74rem;color:var(--muted)"><%= rc.description.substring(0,60) %><%= rc.description.length>60?'...':'' %></span><% } %></td>
+                <td><span class="badge" style="background:#EEF4FF;color:var(--primary);font-size:.7rem"><%= rc.type %></span></td>
+                <td>
+                  <% if(rc.file_path){ %>
+                    <span class="badge" style="background:#D1FAE5;color:#065F46;font-size:.7rem">Attached</span>
+                    <button class="btn-pdf-view" onclick="openPdf('<%= rc.file_path %>')" style="margin-left:6px;font-size:.74rem">View</button>
+                  <% } else { %>
+                    <span class="badge" style="background:#FEE2E2;color:#991B1B;font-size:.7rem">No File</span>
+                  <% } %>
+                </td>
+                <td><span class="badge <%= rc.is_visible?'b-published':'b-draft' %>"><%= rc.is_visible?'Yes':'No' %></span></td>
+                <td>
+                  <div class="act-row">
+                    <button class="ib ib-edit" onclick="openResourceModal(<%= rc.id %>)" title="Edit">✎</button>
+                    <label class="ib ib-edit" title="Upload File" style="cursor:pointer">
+                      📎
+                      <input type="file" id="rfile-<%= rc.id %>" accept=".pdf,.doc,.docx" style="display:none" onchange="uploadResourceFile(<%= rc.id %>,this)">
+                    </label>
+                    <% if(rc.file_path&&(currentUserRole==='admin'||currentUserRole==='manager')){ %>
+                      <button class="ib ib-del" onclick="delResourceFile(<%= rc.id %>)" title="Remove File">🗑📎</button>
+                    <% } %>
+                    <% if(currentUserRole==='admin'||currentUserRole==='manager'){ %>
+                      <button class="ib ib-del" onclick="delResource(<%= rc.id %>)" title="Delete Resource">🗑</button>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────────────── OUR SERVICES ─────────────── -->
+    <div id="panel-services" class="panel">
+      <form id="services-form">
+
+        <!-- EPI Vaccination -->
+        <div class="card">
+          <div class="card-head"><h3>EPI Vaccination</h3><span class="badge b-published" style="font-size:.72rem">Live on site</span></div>
+          <div class="card-body">
+            <div class="fg"><label>Card Short Description</label><textarea name="service_vax_desc" rows="2" class="fc"><%= settings.service_vax_desc||'' %></textarea></div>
+            <div class="fg"><label>Modal/Popup Title</label><input type="text" name="service_vax_title" value="<%= settings.service_vax_title||'' %>" class="fc"></div>
+            <div class="fg"><label>Modal Description</label><textarea name="service_vax_details" rows="4" class="fc"><%= settings.service_vax_details||'' %></textarea></div>
+            <div class="fg">
+              <label>Highlights</label>
+              <div class="hl-list" id="hl-vax">
+                <% ['service_vax_hl_1','service_vax_hl_2','service_vax_hl_3','service_vax_hl_4','service_vax_hl_5','service_vax_hl_6','service_vax_hl_7','service_vax_hl_8'].forEach(function(k){ if(settings[k]){ %>
+                <div class="hl-row">
+                  <input type="text" class="fc hl-input" value="<%= settings[k] %>" placeholder="Highlight point...">
+                  <button type="button" class="btn-hl-rm" onclick="rmHlRow(this)" title="Remove">&#x1F5D1;</button>
+                </div>
+                <% }}); %>
+              </div>
+              <button type="button" class="btn-hl-add" onclick="addHlRow('hl-vax')">+ Add Row</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Private Vaccination -->
+        <div class="card">
+          <div class="card-head"><h3>Private Vaccination</h3><span class="badge b-published" style="font-size:.72rem">Live on site</span></div>
+          <div class="card-body">
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Card description shown on the homepage. The vaccine schedule table is managed separately via the Private Vaccine Schedule modal.</p>
+            <div class="fg"><label>Card Short Description</label><textarea name="service_pvt_desc" rows="2" class="fc"><%= settings.service_pvt_desc||'' %></textarea></div>
+          </div>
+        </div>
+
+        <!-- Family Planning -->
+        <div class="card">
+          <div class="card-head"><h3>Family Planning</h3><span class="badge b-published" style="font-size:.72rem">Live on site</span></div>
+          <div class="card-body">
+            <div class="fg"><label>Card Short Description</label><textarea name="service_fp_desc" rows="2" class="fc"><%= settings.service_fp_desc||'' %></textarea></div>
+            <div class="fg"><label>Modal/Popup Title</label><input type="text" name="service_fp_title" value="<%= settings.service_fp_title||'' %>" class="fc"></div>
+            <div class="fg"><label>Modal Description</label><textarea name="service_fp_details" rows="4" class="fc"><%= settings.service_fp_details||'' %></textarea></div>
+            <div class="fg">
+              <label>Highlights</label>
+              <div class="hl-list" id="hl-fp">
+                <% ['service_fp_hl_1','service_fp_hl_2','service_fp_hl_3','service_fp_hl_4','service_fp_hl_5','service_fp_hl_6','service_fp_hl_7','service_fp_hl_8'].forEach(function(k){ if(settings[k]){ %>
+                <div class="hl-row">
+                  <input type="text" class="fc hl-input" value="<%= settings[k] %>" placeholder="Highlight point...">
+                  <button type="button" class="btn-hl-rm" onclick="rmHlRow(this)" title="Remove">&#x1F5D1;</button>
+                </div>
+                <% }}); %>
+              </div>
+              <button type="button" class="btn-hl-add" onclick="addHlRow('hl-fp')">+ Add Row</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Antenatal Care -->
+        <div class="card">
+          <div class="card-head"><h3>Antenatal Care</h3><span class="badge b-published" style="font-size:.72rem">Live on site</span></div>
+          <div class="card-body">
+            <div class="fg"><label>Card Short Description</label><textarea name="service_anc_desc" rows="2" class="fc"><%= settings.service_anc_desc||'' %></textarea></div>
+            <div class="fg"><label>Modal/Popup Title</label><input type="text" name="service_anc_title" value="<%= settings.service_anc_title||'' %>" class="fc"></div>
+            <div class="fg"><label>Modal Description</label><textarea name="service_anc_details" rows="4" class="fc"><%= settings.service_anc_details||'' %></textarea></div>
+            <div class="fg">
+              <label>Highlights</label>
+              <div class="hl-list" id="hl-anc">
+                <% ['service_anc_hl_1','service_anc_hl_2','service_anc_hl_3','service_anc_hl_4','service_anc_hl_5','service_anc_hl_6','service_anc_hl_7','service_anc_hl_8'].forEach(function(k){ if(settings[k]){ %>
+                <div class="hl-row">
+                  <input type="text" class="fc hl-input" value="<%= settings[k] %>" placeholder="Highlight point...">
+                  <button type="button" class="btn-hl-rm" onclick="rmHlRow(this)" title="Remove">&#x1F5D1;</button>
+                </div>
+                <% }}); %>
+              </div>
+              <button type="button" class="btn-hl-add" onclick="addHlRow('hl-anc')">+ Add Row</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Autism Support -->
+        <div class="card">
+          <div class="card-head"><h3>Autism Support</h3><span class="badge b-published" style="font-size:.72rem">Live on site</span></div>
+          <div class="card-body">
+            <div class="fg"><label>Card Short Description</label><textarea name="service_autism_desc" rows="2" class="fc"><%= settings.service_autism_desc||'' %></textarea></div>
+            <div class="fg"><label>Modal/Popup Title</label><input type="text" name="service_autism_title" value="<%= settings.service_autism_title||'' %>" class="fc"></div>
+            <div class="fg"><label>Modal Description</label><textarea name="service_autism_details" rows="4" class="fc"><%= settings.service_autism_details||'' %></textarea></div>
+            <div class="fg">
+              <label>Highlights</label>
+              <div class="hl-list" id="hl-autism">
+                <% ['service_autism_hl_1','service_autism_hl_2','service_autism_hl_3','service_autism_hl_4','service_autism_hl_5','service_autism_hl_6','service_autism_hl_7','service_autism_hl_8'].forEach(function(k){ if(settings[k]){ %>
+                <div class="hl-row">
+                  <input type="text" class="fc hl-input" value="<%= settings[k] %>" placeholder="Highlight point...">
+                  <button type="button" class="btn-hl-rm" onclick="rmHlRow(this)" title="Remove">&#x1F5D1;</button>
+                </div>
+                <% }}); %>
+              </div>
+              <button type="button" class="btn-hl-add" onclick="addHlRow('hl-autism')">+ Add Row</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-bottom:18px">
+          <button type="submit" class="btn btn-primary" id="save-services-btn" style="padding:10px 28px">Save All Services</button>
         </div>
       </form>
     </div>
-  </div>
 
-  <!-- EDIT SECTION MODAL -->
-  <div class="modal-backdrop hidden" id="sectionModal">
-    <div class="modal-card">
-      <h3 style="font-family: var(--font-heading); margin-top:0; margin-bottom:10px;">Edit Section</h3>
-      <form id="editSectionForm" class="admin-form" enctype="multipart/form-data">
-        <input type="hidden" id="editSectionId">
-        <div id="editSectionError" class="alert alert-danger hidden"></div>
-        <div class="form-group">
-          <label for="editSectionTitle">Section Title *</label>
-          <input type="text" id="editSectionTitle" required class="form-control">
+    <!-- ─────────────── SETTINGS ─────────────── -->
+    <div id="panel-settings" class="panel">
+
+      <!-- Image uploads -->
+      <div class="card">
+        <div class="card-head"><h3>Site Images & Media</h3></div>
+        <div class="card-body">
+          <div class="img-upload-grid">
+            <% [
+              {field:'hero_image',label:'Hero Banner'},
+              {field:'service_vax_image',label:'EPI Service'},
+              {field:'service_fp_image',label:'Family Planning'},
+              {field:'service_anc_image',label:'Antenatal Care'},
+              {field:'service_autism_image',label:'Autism Support'}
+            ].forEach(function(img){ %>
+            <div class="img-item">
+              <label><%= img.label %></label>
+              <div id="prev-<%= img.field %>">
+                <% if(settings[img.field]){ %><img src="<%= settings[img.field] %>" class="img-prev" alt=""><% } else { %><div class="img-ph">No image set</div><% } %>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <input type="file" id="fi-<%= img.field %>" accept=".jpg,.jpeg,.png,.webp" class="fc" style="flex:1;font-size:.74rem">
+                <button class="btn btn-ghost btn-sm" onclick="uploadSettingImg('<%= img.field %>')">Upload</button>
+              </div>
+            </div>
+            <% }) %>
+          </div>
+          <p style="font-size:.74rem;color:var(--muted);margin-top:10px">JPG, PNG, WEBP. Max 5MB.</p>
         </div>
-        <div class="form-group">
-          <label for="editSectionContent">Section Content *</label>
-          <textarea id="editSectionContent" rows="4" required class="form-control"></textarea>
+      </div>
+
+      <!-- Site settings form -->
+      <form id="settings-form">
+        <div class="card">
+          <div class="card-head"><h3>Hero Section</h3></div>
+          <div class="card-body">
+            <div class="fg"><label>Hero Title</label><input type="text" name="hero_title" value="<%= settings.hero_title||'' %>" class="fc"></div>
+            <div class="fg"><label>Hero Description</label><textarea name="hero_description" rows="3" class="fc"><%= settings.hero_description||'' %></textarea></div>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="editSectionImage">Replace Image (optional)</label>
-          <input type="file" id="editSectionImage" accept=".jpg,.jpeg,.png,.webp,.gif" class="form-control">
+
+        <div class="card">
+          <div class="card-head"><h3>Contact Information</h3></div>
+          <div class="card-body">
+            <div class="fgrid">
+              <div class="fg"><label>Primary Phone</label><input type="text" name="contact_phone" value="<%= settings.contact_phone||'' %>" class="fc"></div>
+              <div class="fg"><label>Alternate Phone</label><input type="text" name="contact_phone_alt" value="<%= settings.contact_phone_alt||'' %>" class="fc"></div>
+              <div class="fg"><label>Primary Email</label><input type="email" name="contact_email" value="<%= settings.contact_email||'' %>" class="fc"></div>
+              <div class="fg"><label>Support Email</label><input type="email" name="contact_email_alt" value="<%= settings.contact_email_alt||'' %>" class="fc"></div>
+              <div class="fg span2"><label>Address</label><input type="text" name="contact_address" value="<%= settings.contact_address||'' %>" class="fc"></div>
+              <div class="fg"><label>Weekday Hours</label><input type="text" name="opening_hours_weekdays" value="<%= settings.opening_hours_weekdays||'' %>" class="fc"></div>
+              <div class="fg"><label>Weekend Hours</label><input type="text" name="opening_hours_weekend" value="<%= settings.opening_hours_weekend||'' %>" class="fc"></div>
+            </div>
+          </div>
         </div>
-        <div class="form-group form-check-group">
-          <input type="checkbox" id="editSectionVisible">
-          <label for="editSectionVisible">Visible on homepage</label>
+
+        <div class="card">
+          <div class="card-head"><h3>About Section</h3></div>
+          <div class="card-body">
+            <div class="fgrid">
+              <div class="fg span2"><label>Subtitle</label><input type="text" name="about_subtitle" value="<%= settings.about_subtitle||'' %>" class="fc"></div>
+              <div class="fg"><label>Paragraph 1</label><textarea name="about_paragraph_1" rows="3" class="fc"><%= settings.about_paragraph_1||'' %></textarea></div>
+              <div class="fg"><label>Paragraph 2</label><textarea name="about_paragraph_2" rows="3" class="fc"><%= settings.about_paragraph_2||'' %></textarea></div>
+              <div class="fg"><label>Children Stat</label><input type="text" name="stat_children" value="<%= settings.stat_children||'' %>" class="fc"></div>
+              <div class="fg"><label>Staff Stat</label><input type="text" name="stat_staff" value="<%= settings.stat_staff||'' %>" class="fc"></div>
+              <div class="fg"><label>Satisfaction Stat</label><input type="text" name="stat_satisfaction" value="<%= settings.stat_satisfaction||'' %>" class="fc"></div>
+            </div>
+          </div>
         </div>
-        <div class="admin-form-actions" style="margin-top: 20px; border:none; padding:0;">
-          <button type="button" class="btn btn-secondary" onclick="closeEditSectionModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+
+        <div style="display:flex;justify-content:flex-end;margin-bottom:18px">
+          <button type="submit" class="btn btn-primary" id="save-settings-btn" style="padding:10px 28px">Save All Settings</button>
         </div>
       </form>
+
+      <!-- Resource PDFs managed via Resources panel -->
     </div>
-  </div>
 
-  <!-- EDIT VACCINE MODAL -->
-  <div class="modal-backdrop hidden" id="vaccineModal">
-    <div class="modal-card">
-      <h3 style="font-family: var(--font-heading); margin-top:0; margin-bottom:10px;">Edit Vaccine Entry</h3>
-      <form id="editVaccineForm" class="admin-form">
-        <input type="hidden" id="editVaccineId">
-        <div id="editVaccineError" class="alert alert-danger hidden"></div>
-        <div class="form-group">
-          <label for="editVaccineName">Vaccine Name & Dose *</label>
-          <input type="text" id="editVaccineName" required class="form-control">
+    <!-- ─────────────── USERS ─────────────── -->
+    <!-- ─────────────── MY PROFILE ─────────────── -->
+    <div id="panel-profile" class="panel">
+      <div class="card" style="max-width:460px">
+        <div class="card-head"><h3>My Profile</h3></div>
+        <div class="card-body">
+          <div class="fg">
+            <label>Username</label>
+            <input type="text" class="fc" value="<%= currentUser %>" disabled style="background:#f8fafc;color:var(--muted)">
+          </div>
+          <div class="fg">
+            <label>Role</label>
+            <div style="padding:6px 0"><span class="badge b-<%= currentUserRole %>" style="font-size:.82rem;text-transform:capitalize"><%= currentUserRole %></span></div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+          <p style="font-size:.84rem;color:var(--muted);margin-bottom:14px">Change your account password:</p>
+          <button class="btn btn-primary" onclick="openPwdModal(<%= currentUserId %>,'<%= currentUser %>')">&#x1F511; Change My Password</button>
         </div>
-        <div class="form-group">
-          <label for="editVaccineAgeText">Target Age Text *</label>
-          <input type="text" id="editVaccineAgeText" required class="form-control">
-        </div>
-        <div class="form-group">
-          <label for="editVaccineOffsetDays">Offset Days from Birth *</label>
-          <input type="number" id="editVaccineOffsetDays" min="0" required class="form-control">
-        </div>
-        <div class="form-group">
-          <label for="editVaccineDiseases">Diseases Prevented</label>
-          <input type="text" id="editVaccineDiseases" class="form-control">
-        </div>
-        <div class="admin-form-actions" style="margin-top: 20px; border:none; padding:0;">
-          <button type="button" class="btn btn-secondary" onclick="closeEditVaccineModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
+      </div>
     </div>
+
+    <% if(currentUserRole !== 'editor'){ %>
+    <div id="panel-users" class="panel">
+      <div class="g2">
+        <div class="card">
+          <div class="card-head"><h3>System Users</h3></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="users-tbody">
+              <% users.forEach(function(u){ %>
+                <tr id="urow-<%= u.id %>">
+                  <td><strong><%= u.username %></strong></td>
+                  <td><span class="badge b-<%= u.role %>"><%= u.role %></span></td>
+                  <td style="color:var(--muted);font-size:.78rem"><%= new Date(u.created_at).toLocaleDateString() %></td>
+                  <td>
+                    <div class="act-row">
+                      <% if(currentUserRole==='admin'||u.id===currentUserId){ %>
+                        <button class="ib ib-key" onclick="openPwdModal(<%= u.id %>,'<%= u.username %>')" title="Change Password">🔑</button>
+                      <% } %>
+                      <% if(currentUserRole==='admin'&&u.id!==currentUserId){ %>
+                        <button class="ib ib-del" onclick="delUser(<%= u.id %>)" title="Delete">🗑</button>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <% if(currentUserRole==='admin'){ %>
+        <div class="card">
+          <div class="card-head"><h3>Create New User</h3></div>
+          <div class="card-body">
+            <div id="user-create-err" class="alert alert-danger"></div>
+            <div class="fg"><label>Username *</label><input type="text" id="nu-username" class="fc" placeholder="e.g. nurse_rahima"></div>
+            <div class="fg"><label>Password * (min 6 chars)</label><input type="password" id="nu-password" class="fc" placeholder="••••••••"></div>
+            <div class="fg">
+              <label>Role *</label>
+              <select id="nu-role" class="fc">
+                <option value="editor">Editor — Edit content only</option>
+                <option value="manager">Manager — Edit &amp; delete content</option>
+                <option value="admin">Admin — Full access</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="createUser()">Create Account</button>
+          </div>
+        </div>
+        <% } else { %>
+        <div class="card">
+          <div class="card-head"><h3>Permissions</h3></div>
+          <div class="card-body"><p style="color:var(--muted);font-size:.84rem">Only <strong>Admins</strong> can create new user accounts. Contact your administrator.</p></div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- ─────────────── AUDIT LOG ─────────────── -->
+    <div id="panel-audit" class="panel">
+      <div class="card">
+        <div class="card-head"><h3>Audit Log</h3><span style="font-size:.78rem;color:var(--muted)">Last 100 actions · Read-only</span></div>
+        <div class="card-body">
+          <% if(!auditLogs.length){ %><p style="color:var(--muted)">No activity recorded yet.</p><% } %>
+          <% auditLogs.forEach(function(log){ %>
+          <%
+            var iconClass = log.action.includes('DELETE')?'al-delete':log.action.includes('CREATE')?'al-create':log.action.includes('LOGIN')||log.action.includes('LOGOUT')?'al-login':'al-update';
+            var icon = log.action.includes('DELETE')?'🗑':log.action.includes('CREATE')?'✦':log.action.includes('LOGIN')?'🔐':'✎';
+          %>
+          <div class="al-row">
+            <div class="al-icon <%= iconClass %>"><%= icon %></div>
+            <div class="al-info">
+              <p><strong><%= log.username %></strong> · <span style="color:var(--primary);font-weight:600"><%= log.action %></span><% if(log.target_table){ %> on <em><%= log.target_table %></em><% if(log.target_id){ %> #<%= log.target_id %><% } %><% } %><% if(log.details){ %> · <span style="color:var(--muted)"><%= log.details %></span><% } %></p>
+              <small><%= new Date(log.created_at).toLocaleString() %><% if(log.ip){ %> · <%= log.ip %><% } %></small>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+    <% } %> <%# end: editor guard for panel-users + panel-audit %>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ══════════════════════ MODALS ══════════════════════ -->
+
+<!-- Change Password -->
+<div id="modal-pwd" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Change Password</h3><button class="modal-close" onclick="closeModal('modal-pwd')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:.83rem;color:var(--muted);margin-bottom:16px">Updating password for: <strong id="pwd-username"></strong></p>
+      <input type="hidden" id="pwd-userid">
+      <div id="pwd-err" class="alert alert-danger"></div>
+      <div class="fg"><label>New Password * (min 6 chars)</label><input type="password" id="pwd-new" class="fc" placeholder="New password"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-pwd')">Cancel</button><button class="btn btn-primary" onclick="changePwd()">Update Password</button></div>
   </div>
+</div>
 
-  <!-- Sections & Vaccines data for admin.js (read as JSON, not executed as script) -->
-  <script type="application/json" id="sections-data"><%- JSON.stringify(sections).replace(/<\//g, '<\\/') %></script>
-  <script type="application/json" id="vaccines-data"><%- JSON.stringify(vaccines).replace(/<\//g, '<\\/') %></script>
+<!-- Vaccine Modal -->
+<div id="modal-vaccine" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="vmodal-title">Add Vaccine Entry</h3><button class="modal-close" onclick="closeModal('modal-vaccine')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="v-id">
+      <div id="v-err" class="alert alert-danger"></div>
+      <div class="fg"><label>Vaccine Name *</label><input type="text" id="v-name" class="fc" placeholder="e.g. BCG (Tuberculosis)"></div>
+      <div class="fgrid">
+        <div class="fg"><label>Target Age *</label><input type="text" id="v-age" class="fc" placeholder="e.g. At Birth"></div>
+        <div class="fg"><label>Offset Days *</label><input type="number" id="v-days" min="0" class="fc" placeholder="0"></div>
+      </div>
+      <div class="fg"><label>Diseases Prevented</label><input type="text" id="v-diseases" class="fc" placeholder="e.g. Tuberculosis"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-vaccine')">Cancel</button><button class="btn btn-primary" onclick="saveVaccine()">Save Entry</button></div>
+  </div>
+</div>
 
-  <!-- Dashboard Script dependencies -->
-  <script src="/admin.js"></script>
+<!-- Section Modal -->
+<div id="modal-section" class="modal-overlay">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head"><h3 id="smodal-title">Add Section</h3><button class="modal-close" onclick="closeModal('modal-section')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="s-id">
+      <div id="s-err" class="alert alert-danger"></div>
+      <div class="fg"><label>Title *</label><input type="text" id="s-title" class="fc" placeholder="Section title"></div>
+      <div class="fg"><label>Content *</label><textarea id="s-content" rows="5" class="fc" placeholder="Section content..."></textarea></div>
+      <div class="fg"><label>Image <span style="color:var(--muted);font-weight:400">(optional — replaces existing)</span></label><input type="file" id="s-image" accept=".jpg,.jpeg,.png,.webp" class="fc"></div>
+      <label class="inline-cb" style="margin-top:4px"><input type="checkbox" id="s-visible" checked> Visible on homepage</label>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-section')">Cancel</button><button class="btn btn-primary" onclick="saveSection()">Save Section</button></div>
+  </div>
+</div>
 
+<!-- Resource Modal -->
+<div id="modal-resource" class="modal-overlay">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-head"><h3 id="rmodal-title">Add Resource</h3><button class="modal-close" onclick="closeModal('modal-resource')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="r-id">
+      <div id="r-err" class="alert alert-danger"></div>
+      <div class="fg"><label>Title *</label><input type="text" id="r-title" class="fc" placeholder="e.g. Child Immunization Guide"></div>
+      <div class="fgrid">
+        <div class="fg">
+          <label>Type *</label>
+          <select id="r-type" class="fc">
+            <option value="GUIDE">GUIDE</option>
+            <option value="BROCHURE">BROCHURE</option>
+            <option value="CHECKLIST">CHECKLIST</option>
+            <option value="REPORT">REPORT</option>
+            <option value="FACTSHEET">FACTSHEET</option>
+            <option value="LEAFLET">LEAFLET</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Visible on Website</label>
+          <select id="r-visible" class="fc">
+            <option value="1">Yes — Published</option>
+            <option value="0">No — Hidden</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label>Description <span style="color:var(--muted);font-weight:400">(optional)</span></label><textarea id="r-desc" rows="3" class="fc" placeholder="Brief description of this resource..."></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-resource')">Cancel</button><button class="btn btn-primary" onclick="saveResource()">Save Resource</button></div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div id="modal-event" class="modal-overlay">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head"><h3 id="emodal-title">New Event</h3><button class="modal-close" onclick="closeModal('modal-event')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="e-id">
+      <div id="e-err" class="alert alert-danger"></div>
+      <div class="fg"><label>Event Title *</label><input type="text" id="e-title" class="fc" placeholder="e.g. Free Vaccination Camp"></div>
+      <div class="fgrid">
+        <div class="fg"><label>Date *</label><input type="date" id="e-date" class="fc"></div>
+        <div class="fg"><label>Time</label><input type="text" id="e-time" class="fc" placeholder="9:00 AM – 4:00 PM"></div>
+        <div class="fg"><label>Location</label><input type="text" id="e-location" class="fc" placeholder="Center address"></div>
+        <div class="fg">
+          <label>Category</label>
+          <select id="e-category" class="fc">
+            <option value="General">General</option>
+            <option value="Vaccination Drive">Vaccination Drive</option>
+            <option value="Health Camp">Health Camp</option>
+            <option value="Seminar">Seminar</option>
+            <option value="Workshop">Workshop</option>
+            <option value="Community Outreach">Community Outreach</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label>Description *</label><textarea id="e-desc" rows="4" class="fc" placeholder="Describe the event..."></textarea></div>
+      <div class="fgrid">
+        <div class="fg"><label>Cover Image <span style="color:var(--muted);font-weight:400">(.jpg/.png)</span></label><input type="file" id="e-image" accept=".jpg,.jpeg,.png,.webp" class="fc"></div>
+        <div class="fg"><label>PDF Brochure <span style="color:var(--muted);font-weight:400">(.pdf)</span></label><input type="file" id="e-pdf" accept=".pdf" class="fc"></div>
+      </div>
+      <label class="inline-cb" style="margin-top:4px"><input type="checkbox" id="e-published"> Publish immediately</label>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-event')">Cancel</button><button class="btn btn-primary" onclick="saveEvent()">Save Event</button></div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast"></div>
+
+<!-- Embedded data -->
+<script type="application/json" id="d-vaccines"><%- JSON.stringify(vaccines).replace(/<\//g,'<\\/') %></script>
+<script type="application/json" id="d-sections"><%- JSON.stringify(sections).replace(/<\//g,'<\\/') %></script>
+<script type="application/json" id="d-events"><%- JSON.stringify(events).replace(/<\//g,'<\\/') %></script>
+<script type="application/json" id="d-resources"><%- JSON.stringify(resources).replace(/<\//g,'<\\/') %></script>
+<script>var CURRENT_USER_ROLE='<%= currentUserRole %>';var CURRENT_USER_ID=<%= currentUserId %>;</script>
+<script src="/admin.js?v=<%= Date.now() %>"></script>
+<script>
+  // BFCache guard
+  window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload();});
+  // Modal close on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(function(o){
+    o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});
+  });
+</script>
 </body>
 </html>

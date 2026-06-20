@@ -4,5 +4,5 @@ database.db
 *.log
 public/uploads/*
 !public/uploads/.gitkeep
-.vscode/
+certs/
 .vscode/

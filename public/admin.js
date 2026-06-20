@@ -1,823 +1,754 @@
 // ==========================================================================
-// ADMIN DASHBOARD CLIENT CONTROLLER
+// ADMIN PANEL — clean, modular JS
 // ==========================================================================
 
-// Current user's role — set server-side on the body element
-const USER_ROLE = document.body.dataset.role || 'editor';
+// ── Data ──────────────────────────────────────────────────────────
+var vaccinesData = [], sectionsData = [], eventsData = [], resourcesData = [];
+try { var _v = document.getElementById('d-vaccines');  if(_v) vaccinesData  = JSON.parse(_v.textContent); } catch(e){}
+try { var _s = document.getElementById('d-sections');  if(_s) sectionsData  = JSON.parse(_s.textContent); } catch(e){}
+try { var _e = document.getElementById('d-events');    if(_e) eventsData    = JSON.parse(_e.textContent); } catch(e){}
+try { var _r = document.getElementById('d-resources'); if(_r) resourcesData = JSON.parse(_r.textContent); } catch(e){}
 
-// Sections & vaccines data embedded by the server (used by edit modals)
-const sectionsDataEl = document.getElementById('sections-data');
-const vaccinesDataEl = document.getElementById('vaccines-data');
-const sectionsData = sectionsDataEl ? JSON.parse(sectionsDataEl.textContent) : [];
-const vaccinesData = vaccinesDataEl ? JSON.parse(vaccinesDataEl.textContent) : [];
-
-document.addEventListener('DOMContentLoaded', () => {
-  // 1. Set up sidebar tabs listeners
-  const sidebarItems = document.querySelectorAll('.sidebar-item');
-  sidebarItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const targetPanel = item.getAttribute('data-panel');
-      switchTab(targetPanel);
-    });
-  });
-
-  // 2. Set up website settings form submission
-  const settingsForm = document.getElementById('websiteSettingsForm');
-  if (settingsForm) {
-    settingsForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const saveBtn = document.getElementById('saveSettingsBtn');
-      const originalText = saveBtn.textContent;
-      
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving Changes...';
-
-      // Gather form inputs into JSON
-      const formData = new FormData(settingsForm);
-      const settingsObject = {};
-      formData.forEach((value, key) => {
-        settingsObject[key] = value;
-      });
-
-      try {
-        const response = await fetch('/api/admin/settings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(settingsObject)
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          showNotification('Website settings updated successfully!', 'success');
-        } else {
-          showNotification(data.error || 'Failed to save settings.', 'danger');
-        }
-      } catch (err) {
-        showNotification('Connection error. Failed to save settings.', 'danger');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = originalText;
-      }
-    });
-  }
-
-  // 3. User account creation form
-  const createUsrForm = document.getElementById('createAdminUserForm');
-  const userErrBox = document.getElementById('createUserError');
-  if (createUsrForm) {
-    createUsrForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      userErrBox.classList.add('hidden');
-      
-      const username = document.getElementById('newUsername').value.trim();
-      const password = document.getElementById('newPassword').value;
-
-      try {
-        const role = document.getElementById('newUserRole')?.value || 'editor';
-        const response = await fetch('/api/admin/users', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ username, password, role })
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          showNotification(`Admin account "${username}" created successfully.`, 'success');
-          createUsrForm.reset();
-          
-          // Append new user card inline
-          const container = document.getElementById('usersContainer');
-          const newCard = document.createElement('div');
-          newCard.className = 'user-card';
-          newCard.id = `user-card-${data.userId}`;
-          const roleLabel = (data.role || role).charAt(0).toUpperCase() + (data.role || role).slice(1);
-          newCard.innerHTML = `
-            <div class="user-card-info">
-              <h5>${username}</h5>
-              <span class="role-badge role-${data.role || role}">${roleLabel}</span>
-              <span>Created: Just Now</span>
-            </div>
-            <div class="actions-cell">
-              <button class="action-btn" onclick="openChangePasswordModal(${data.userId}, '${username}')" title="Change Password">🔑</button>
-              ${USER_ROLE === 'admin' ? `<button class="action-btn btn-delete" onclick="deleteUser(${data.userId})" title="Delete Account">🗑</button>` : ''}
-            </div>
-          `;
-          container.appendChild(newCard);
-          
-          // Update admin count stats
-          updateStatCount('stat-total-admins', 1);
-        } else {
-          userErrBox.textContent = data.error || 'Failed to create account.';
-          userErrBox.classList.remove('hidden');
-        }
-      } catch (err) {
-        userErrBox.textContent = 'Connection error. Please try again.';
-        userErrBox.classList.remove('hidden');
-      }
-    });
-  }
-
-  // 4. Change Password form submission
-  const changePwdForm = document.getElementById('changePasswordForm');
-  const pwdModalError = document.getElementById('pwdModalError');
-  if (changePwdForm) {
-    changePwdForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      pwdModalError.classList.add('hidden');
-      
-      const userId = document.getElementById('pwdModalUserId').value;
-      const newPassword = document.getElementById('newPasswordVal').value;
-
-      try {
-        const response = await fetch('/api/admin/users/change-password', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ userId, newPassword })
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          showNotification('Password updated successfully.', 'success');
-          closeChangePasswordModal();
-        } else {
-          pwdModalError.textContent = data.error || 'Failed to update password.';
-          pwdModalError.classList.remove('hidden');
-        }
-      } catch (err) {
-        pwdModalError.textContent = 'Connection error. Please try again.';
-        pwdModalError.classList.remove('hidden');
-      }
-    });
-  }
-
-  // 5. Site image upload forms (hero banner & service card images)
-  document.querySelectorAll('.image-upload-form').forEach(form => {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const field = form.getAttribute('data-field');
-      const fileInput = form.querySelector('input[type="file"]');
-      if (!fileInput.files.length) return;
-
-      const submitBtn = form.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Uploading...';
-
-      const formData = new FormData();
-      formData.append('image', fileInput.files[0]);
-      formData.append('field', field);
-
-      try {
-        const response = await fetch('/api/admin/upload-setting-image', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          showNotification('Image updated successfully.', 'success');
-          const previewBox = document.getElementById(`preview-box-${field}`);
-          if (previewBox) {
-            previewBox.innerHTML = `<img src="${data.path}" alt="">`;
-          }
-          form.reset();
-        } else {
-          showNotification(data.error || 'Failed to upload image.', 'danger');
-        }
-      } catch (err) {
-        showNotification('Connection error. Failed to upload image.', 'danger');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    });
-  });
-
-  // 6. Create new homepage section
-  const createSectionForm = document.getElementById('createSectionForm');
-  const createSectionError = document.getElementById('createSectionError');
-  if (createSectionForm) {
-    createSectionForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      createSectionError.classList.add('hidden');
-
-      const submitBtn = createSectionForm.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Adding Section...';
-
-      const formData = new FormData(createSectionForm);
-      formData.set('is_visible', document.getElementById('newSectionVisible').checked ? '1' : '0');
-
-      try {
-        const response = await fetch('/api/admin/sections', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          showNotification('Section added successfully. Reloading page...', 'success');
-          setTimeout(() => window.location.reload(), 700);
-        } else {
-          createSectionError.textContent = data.error || 'Failed to add section.';
-          createSectionError.classList.remove('hidden');
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-        }
-      } catch (err) {
-        createSectionError.textContent = 'Connection error. Please try again.';
-        createSectionError.classList.remove('hidden');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    });
-  }
-
-  // 7. Edit homepage section
-  const editSectionForm = document.getElementById('editSectionForm');
-  const editSectionError = document.getElementById('editSectionError');
-  if (editSectionForm) {
-    editSectionForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      editSectionError.classList.add('hidden');
-
-      const id = document.getElementById('editSectionId').value;
-      const submitBtn = editSectionForm.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Saving...';
-
-      const formData = new FormData();
-      formData.append('title', document.getElementById('editSectionTitle').value);
-      formData.append('content', document.getElementById('editSectionContent').value);
-      formData.append('is_visible', document.getElementById('editSectionVisible').checked ? '1' : '0');
-      const imageFile = document.getElementById('editSectionImage').files[0];
-      if (imageFile) formData.append('image', imageFile);
-
-      try {
-        const response = await fetch(`/api/admin/sections/${id}`, {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          showNotification('Section updated successfully. Reloading page...', 'success');
-          setTimeout(() => window.location.reload(), 700);
-        } else {
-          editSectionError.textContent = data.error || 'Failed to update section.';
-          editSectionError.classList.remove('hidden');
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-        }
-      } catch (err) {
-        editSectionError.textContent = 'Connection error. Please try again.';
-        editSectionError.classList.remove('hidden');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    });
-  }
-
-  // 8. Create new vaccine schedule entry
-  const createVaccineForm = document.getElementById('createVaccineForm');
-  const createVaccineError = document.getElementById('createVaccineError');
-  if (createVaccineForm) {
-    createVaccineForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      createVaccineError.classList.add('hidden');
-
-      const submitBtn = createVaccineForm.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Adding Entry...';
-
-      const payload = {
-        name: document.getElementById('newVaccineName').value,
-        age_text: document.getElementById('newVaccineAgeText').value,
-        offset_days: document.getElementById('newVaccineOffsetDays').value,
-        diseases: document.getElementById('newVaccineDiseases').value
-      };
-
-      try {
-        const response = await fetch('/api/admin/vaccines', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          showNotification('Vaccine entry added successfully. Reloading page...', 'success');
-          setTimeout(() => window.location.reload(), 700);
-        } else {
-          createVaccineError.textContent = data.error || 'Failed to add vaccine entry.';
-          createVaccineError.classList.remove('hidden');
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-        }
-      } catch (err) {
-        createVaccineError.textContent = 'Connection error. Please try again.';
-        createVaccineError.classList.remove('hidden');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    });
-  }
-
-  // 9. Edit vaccine schedule entry
-  const editVaccineForm = document.getElementById('editVaccineForm');
-  const editVaccineError = document.getElementById('editVaccineError');
-  if (editVaccineForm) {
-    editVaccineForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      editVaccineError.classList.add('hidden');
-
-      const id = document.getElementById('editVaccineId').value;
-      const submitBtn = editVaccineForm.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Saving...';
-
-      const payload = {
-        name: document.getElementById('editVaccineName').value,
-        age_text: document.getElementById('editVaccineAgeText').value,
-        offset_days: document.getElementById('editVaccineOffsetDays').value,
-        diseases: document.getElementById('editVaccineDiseases').value
-      };
-
-      try {
-        const response = await fetch(`/api/admin/vaccines/${id}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-          showNotification('Vaccine entry updated successfully. Reloading page...', 'success');
-          setTimeout(() => window.location.reload(), 700);
-        } else {
-          editVaccineError.textContent = data.error || 'Failed to update vaccine entry.';
-          editVaccineError.classList.remove('hidden');
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-        }
-      } catch (err) {
-        editVaccineError.textContent = 'Connection error. Please try again.';
-        editVaccineError.classList.remove('hidden');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    });
-  }
-});
-
-// ==========================================
-// UTILITY FUNCTIONS
-// ==========================================
-
-// Switch visible panel/tab in dashboard
-function switchTab(panelId) {
-  // Highlight sidebar link
-  const sidebarItems = document.querySelectorAll('.sidebar-item');
-  sidebarItems.forEach(item => {
-    if (item.getAttribute('data-panel') === panelId) {
-      item.classList.add('active');
-    } else {
-      item.classList.remove('active');
-    }
-  });
-
-  // Toggle active dashboard panel
-  const panels = document.querySelectorAll('.dashboard-panel');
-  panels.forEach(p => {
-    if (p.id === `panel-${panelId}`) {
-      p.classList.add('active');
-    } else {
-      p.classList.remove('active');
-    }
-  });
-
-  // Update header title
-  const titles = {
-    overview: 'Overview Panel',
-    bookings: 'Appointment Bookings',
-    inquiries: 'Contact Inquiries',
-    settings: 'Manage Website Content',
-    sections: 'Homepage Sections',
-    vaccines: 'EPI Vaccine Schedule',
-    users: 'Administrator Accounts'
-  };
-  document.getElementById('pageTitle').textContent = titles[panelId] || 'Admin Dashboard';
+// ── Highlight row helpers (Services panel) ────────────────────────
+function addHlRow(listId) {
+  var list = getEl(listId);
+  if (!list) return;
+  var row = document.createElement('div');
+  row.className = 'hl-row';
+  row.innerHTML = '<input type="text" class="fc hl-input" placeholder="Highlight point..."><button type="button" class="btn-hl-rm" onclick="rmHlRow(this)" title="Remove">🗑</button>';
+  list.appendChild(row);
+  row.querySelector('input').focus();
+}
+function rmHlRow(btn) {
+  var row = btn.closest('.hl-row');
+  if (row) row.remove();
 }
 
-// Show alert banner notification
-function showNotification(message, type = 'success') {
-  const alertBox = document.getElementById('dashboardAlert');
-  alertBox.textContent = message;
-  alertBox.className = `alert alert-${type}`;
-  alertBox.classList.remove('hidden');
-  
-  // Smooth scroll alert into view if scrolled down
-  alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-  // Hide after 6 seconds
-  setTimeout(() => {
-    alertBox.classList.add('hidden');
-  }, 6000);
+// ── Toast notifications ───────────────────────────────────────────
+function toast(msg, type) {
+  var container = document.getElementById('toast');
+  if (!container) return;
+  var el = document.createElement('div');
+  el.className = 'toast-item toast-' + (type || 'success');
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(function() { if(el.parentNode) el.parentNode.removeChild(el); }, 4000);
 }
 
-// Helper: update counters
-function updateStatCount(elementId, changeValue) {
-  const elem = document.getElementById(elementId);
-  if (elem) {
-    let currentVal = parseInt(elem.textContent) || 0;
-    elem.textContent = currentVal + changeValue;
-  }
+// ── Panel navigation ──────────────────────────────────────────────
+var panelTitles = {
+  overview:'Overview', bookings:'Appointments', contacts:'Inquiries',
+  events:'Events', vaccines:'Vaccine Schedule', sections:'Page Sections',
+  resources:'Health Resources', services:'Our Services', settings:'Site Settings',
+  users:'User Accounts', audit:'Audit Log', profile:'My Profile'
+};
+
+function switchPanel(name) {
+  // Editors cannot access user management or audit log panels
+  if (CURRENT_USER_ROLE === 'editor' && (name === 'users' || name === 'audit')) name = 'profile';
+  document.querySelectorAll('.nav-link').forEach(function(l) {
+    l.classList.toggle('active', l.getAttribute('data-panel') === name);
+  });
+  document.querySelectorAll('.panel').forEach(function(p) {
+    p.classList.toggle('active', p.id === 'panel-' + name);
+  });
+  var t = document.getElementById('page-title');
+  if (t) t.textContent = panelTitles[name] || name;
 }
 
-// Disable right-click and keys (F12, etc.) for basic inspect prevention
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-  if (
-    e.key === 'F12' || 
-    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) || 
-    (e.ctrlKey && e.key === 'U')
-  ) {
-    e.preventDefault();
-  }
-});
+// ── Modal helpers ─────────────────────────────────────────────────
+function openModal(id) {
+  var m = document.getElementById(id);
+  if (m) m.classList.add('open');
+}
+function closeModal(id) {
+  var m = document.getElementById(id);
+  if (m) m.classList.remove('open');
+}
+function showErr(elId, msg) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function clearErr(elId) {
+  var el = document.getElementById(elId);
+  if (el) { el.textContent = ''; el.classList.remove('show'); }
+}
 
-// ==========================================
-// APPOINTMENTS (BOOKINGS) API CALLS
-// ==========================================
+// ── API wrapper ───────────────────────────────────────────────────
+async function api(url, opts) {
+  var res  = await fetch(url, opts);
+  var data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed (' + res.status + ')');
+  return data;
+}
 
-// Filter bookings table by status badge
+// ── PDF viewer — synchronous anchor click ────────────────────────
+// Must stay synchronous (no fetch/await before click) so the browser
+// preserves the user-gesture context. Any async gap breaks popup-blocker
+// exemption and the click is silently swallowed.
+function openPdf(filePath) {
+  var base = (filePath || '').split('?')[0];
+  if (!base) return;
+  var a = document.createElement('a');
+  a.href = base + '?_t=' + Date.now();
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ── Remove DOM element safely ─────────────────────────────────────
+function rmEl(id) { var el = document.getElementById(id); if (el) el.remove(); }
+function getEl(id) { return document.getElementById(id); }
+function val(id) { var el = getEl(id); return el ? el.value.trim() : ''; }
+function setVal(id, v) { var el = getEl(id); if (el) el.value = v; }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Booking filter ────────────────────────────────────────────────
 function filterBookings(status) {
-  // Update active button state
-  const buttons = document.querySelectorAll('.filter-btn');
-  buttons.forEach(btn => {
-    if (btn.textContent.trim() === status) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
+  document.querySelectorAll('.fb').forEach(function(b) {
+    b.classList.toggle('active', b.textContent.trim() === status);
   });
-
-  // Filter rows
-  const rows = document.querySelectorAll('.booking-data-row');
-  let visibleCount = 0;
-  
-  rows.forEach(row => {
-    const rowStatus = row.getAttribute('data-status');
-    if (status === 'All' || rowStatus === status) {
-      row.classList.remove('hidden');
-      visibleCount++;
-    } else {
-      row.classList.add('hidden');
-    }
+  var visible = 0;
+  document.querySelectorAll('.brow').forEach(function(r) {
+    var show = status === 'All' || r.getAttribute('data-status') === status;
+    r.style.display = show ? '' : 'none';
+    if (show) visible++;
   });
-
-  // Show/Hide no records row if no items match
-  const noRecordsRow = document.querySelector('.no-records-row');
-  if (noRecordsRow) {
-    if (visibleCount === 0) {
-      noRecordsRow.classList.remove('hidden');
-    } else {
-      noRecordsRow.classList.add('hidden');
-    }
-  }
+  var noRow = document.querySelector('.no-rows');
+  if (noRow) noRow.style.display = visible === 0 ? '' : 'none';
 }
 
-// Update appointment status (Pending -> Confirmed -> Completed/Cancelled)
-async function updateBookingStatus(id, newStatus) {
+// ════════════════════════════════════════════════════════════════
+// BOOKINGS
+// ════════════════════════════════════════════════════════════════
+
+async function bookingStatus(id, status) {
   try {
-    const response = await fetch('/api/admin/bookings/status', {
+    await api('/api/admin/bookings/status', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ id, status: newStatus })
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id: id, status: status})
     });
-
-    const data = await response.json();
-    if (response.ok && data.success) {
-      showNotification(`Appointment #${id} updated to "${newStatus}"`, 'success');
-      
-      // Update Table row if exists in Bookings view
-      const bookingRow = document.getElementById(`booking-row-${id}`);
-      if (bookingRow) {
-        bookingRow.setAttribute('data-status', newStatus);
-        const statusBadge = document.getElementById(`status-tag-${id}`);
-        if (statusBadge) {
-          statusBadge.className = `status-badge ${newStatus.toLowerCase()}`;
-          statusBadge.textContent = newStatus;
-        }
-      }
-
-      // Update overview row if exists
-      const overviewRow = document.getElementById(`booking-row-ov-${id}`);
-      if (overviewRow) {
-        const badge = overviewRow.querySelector('.status-badge');
-        if (badge) {
-          badge.className = `status-badge ${newStatus.toLowerCase()}`;
-          badge.textContent = newStatus;
-        }
-      }
-
-      // Refresh Stats counters dynamically
-      // Since we don't reload, let's recalculate count of Pending
-      // Find all booking-data-rows and see how many have status 'Pending'
-      let pendingCount = 0;
-      document.querySelectorAll('.booking-data-row').forEach(row => {
-        const stat = row.getAttribute('data-status');
-        if (stat === 'Pending') pendingCount++;
-      });
-      const pendingStatBox = document.getElementById('stat-pending-bookings');
-      if (pendingStatBox) pendingStatBox.textContent = pendingCount;
-
-    } else {
-      showNotification(data.error || 'Failed to update booking status.', 'danger');
-    }
-  } catch (err) {
-    showNotification('Connection error. Could not update booking status.', 'danger');
-  }
+    toast('Booking updated to ' + status, 'success');
+    var badge = getEl('bst-' + id);
+    if (badge) { badge.className = 'badge b-' + status.toLowerCase(); badge.textContent = status; }
+    var row = getEl('brow-' + id);
+    if (row) row.setAttribute('data-status', status);
+    // Refresh pending count
+    var pending = document.querySelectorAll('.brow[data-status="Pending"]').length;
+    var nb = getEl('nb-pending'); if (nb) nb.textContent = pending;
+    var sp = getEl('stat-pending'); if (sp) sp.textContent = pending;
+  } catch(e) { toast(e.message, 'danger'); }
 }
 
-// Delete Booking completely from SQLite
-async function deleteBooking(id) {
-  if (!confirm(`Are you sure you want to permanently delete appointment booking #${id}?`)) {
-    return;
-  }
-
+async function delBooking(id) {
   try {
-    const response = await fetch(`/api/admin/bookings/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-    if (response.ok && data.success) {
-      showNotification(`Appointment booking #${id} deleted.`, 'success');
-      
-      // Remove elements from DOM
-      document.getElementById(`booking-row-${id}`)?.remove();
-      document.getElementById(`booking-row-ov-${id}`)?.remove();
-      
-      // Update counters
-      updateStatCount('stat-total-bookings', -1);
-      
-      // Re-trigger pending count re-calculation
-      let pendingCount = 0;
-      document.querySelectorAll('.booking-data-row').forEach(row => {
-        const stat = row.getAttribute('data-status');
-        if (stat === 'Pending') pendingCount++;
-      });
-      const pendingStatBox = document.getElementById('stat-pending-bookings');
-      if (pendingStatBox) pendingStatBox.textContent = pendingCount;
-    } else {
-      showNotification(data.error || 'Failed to delete record.', 'danger');
-    }
-  } catch (err) {
-    showNotification('Connection error. Failed to delete booking.', 'danger');
-  }
+    await api('/api/admin/bookings/' + id, {method: 'DELETE'});
+    rmEl('brow-' + id);
+    toast('Booking deleted.', 'success');
+    var total = document.querySelectorAll('.brow').length;
+    var sb = getEl('stat-bookings'); if (sb) sb.textContent = total;
+  } catch(e) { toast(e.message, 'danger'); }
 }
 
-// ==========================================
-// CONTACT MESSAGES (INQUIRIES) API CALLS
-// ==========================================
+// ════════════════════════════════════════════════════════════════
+// CONTACTS
+// ════════════════════════════════════════════════════════════════
 
-// Mark inquiry as Read/Replied
-async function updateInquiryStatus(id, newStatus) {
+async function contactStatus(id, status) {
   try {
-    const response = await fetch('/api/admin/contacts/status', {
+    await api('/api/admin/contacts/status', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ id, status: newStatus })
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id: id, status: status})
     });
+    toast('Inquiry marked as ' + status, 'success');
+    var badge = getEl('cst-' + id);
+    if (badge) { badge.className = 'badge b-' + status.toLowerCase(); badge.textContent = status; }
+    rmEl('cbtn-' + id);
+  } catch(e) { toast(e.message, 'danger'); }
+}
 
-    const data = await response.json();
-    if (response.ok && data.success) {
-      showNotification('Inquiry status updated.', 'success');
-      
-      // Update badge in inquiries view
-      const badge = document.getElementById(`inquiry-status-${id}`);
-      if (badge) {
-        badge.className = `status-badge ${newStatus.toLowerCase()}`;
-        badge.textContent = newStatus;
+async function delContact(id) {
+  try {
+    await api('/api/admin/contacts/' + id, {method: 'DELETE'});
+    rmEl('icard-' + id);
+    toast('Inquiry deleted.', 'success');
+    var sc = getEl('stat-contacts');
+    if (sc) sc.textContent = parseInt(sc.textContent) - 1;
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// VACCINES
+// ════════════════════════════════════════════════════════════════
+
+function openVaccineModal(id) {
+  clearErr('v-err');
+  if (id) {
+    var v = null;
+    for (var i = 0; i < vaccinesData.length; i++) { if (vaccinesData[i].id === id) { v = vaccinesData[i]; break; } }
+    if (!v) { toast('Reload the page and try again.', 'warning'); return; }
+    setVal('v-id', v.id); setVal('v-name', v.name);
+    setVal('v-age', v.age_text); setVal('v-days', v.offset_days);
+    setVal('v-diseases', v.diseases || '');
+    var t = getEl('vmodal-title'); if (t) t.textContent = 'Edit Vaccine Entry';
+  } else {
+    setVal('v-id',''); setVal('v-name',''); setVal('v-age',''); setVal('v-days',''); setVal('v-diseases','');
+    var t = getEl('vmodal-title'); if (t) t.textContent = 'Add Vaccine Entry';
+  }
+  openModal('modal-vaccine');
+}
+
+async function saveVaccine() {
+  clearErr('v-err');
+  var id       = val('v-id');
+  var name     = val('v-name');
+  var age_text = val('v-age');
+  var offset   = val('v-days');
+  var diseases = val('v-diseases');
+  if (!name || !age_text || offset === '') { showErr('v-err','Name, age text, and offset days are required.'); return; }
+  var url = id ? '/api/admin/vaccines/' + id : '/api/admin/vaccines';
+  try {
+    await api(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name:name, age_text:age_text, offset_days:offset, diseases:diseases})
+    });
+    toast(id ? 'Vaccine updated.' : 'Vaccine added.', 'success');
+    closeModal('modal-vaccine');
+    setTimeout(function(){location.reload();}, 600);
+  } catch(e) { showErr('v-err', e.message); }
+}
+
+async function delVaccine(id) {
+  try {
+    await api('/api/admin/vaccines/' + id, {method: 'DELETE'});
+    rmEl('vrow-' + id);
+    toast('Vaccine entry deleted.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function moveVaccine(id, direction) {
+  try {
+    var d = await api('/api/admin/vaccines/' + id + '/move', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({direction: direction})
+    });
+    if (!d.moved) {
+      toast('Already at the ' + (direction==='up'?'top':'bottom') + ' of its day-group.', 'warning');
+      return;
+    }
+    // Live DOM swap — no reload, stays on current panel
+    var row = getEl('vrow-' + id);
+    if (row) {
+      if (direction === 'up') {
+        var prev = row.previousElementSibling;
+        if (prev) row.parentNode.insertBefore(row, prev);
+      } else {
+        var next = row.nextElementSibling;
+        if (next) row.parentNode.insertBefore(next, row);
       }
-      
-      // Update overview inquiry badge if it exists
-      const ovCard = document.getElementById(`inquiry-card-ov-${id}`);
-      if (ovCard) {
-        const ovBadge = ovCard.querySelector('.status-badge');
-        if (ovBadge) {
-          ovBadge.className = `status-badge ${newStatus.toLowerCase()}`;
-          ovBadge.textContent = newStatus;
+      // Refresh serial # column
+      var tbody = getEl('vaccines-tbody');
+      if (tbody) {
+        var rows = tbody.querySelectorAll('tr[id^="vrow-"]');
+        for (var i = 0; i < rows.length; i++) {
+          var firstCell = rows[i].querySelector('td:first-child');
+          if (firstCell) firstCell.textContent = i + 1;
         }
       }
-
-      // Hide "Mark Replied" button
-      document.getElementById(`btn-read-${id}`)?.classList.add('hidden');
-    } else {
-      showNotification(data.error || 'Failed to update status.', 'danger');
     }
-  } catch (err) {
-    showNotification('Connection error. Failed to update status.', 'danger');
-  }
+    toast('Order updated.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
 }
 
-// Delete contact inquiry completely
-async function deleteInquiry(id) {
-  if (!confirm('Are you sure you want to permanently delete this customer message?')) {
-    return;
-  }
+// ════════════════════════════════════════════════════════════════
+// SECTIONS
+// ════════════════════════════════════════════════════════════════
 
+function openSectionModal(id) {
+  clearErr('s-err');
+  setVal('s-image', '');
+  if (id) {
+    var s = null;
+    for (var i = 0; i < sectionsData.length; i++) { if (sectionsData[i].id === id) { s = sectionsData[i]; break; } }
+    if (!s) { toast('Reload the page and try again.', 'warning'); return; }
+    setVal('s-id', s.id); setVal('s-title', s.title); setVal('s-content', s.content);
+    var cb = getEl('s-visible'); if (cb) cb.checked = s.is_visible === 1 || s.is_visible === true;
+    var t = getEl('smodal-title'); if (t) t.textContent = 'Edit Section';
+  } else {
+    setVal('s-id',''); setVal('s-title',''); setVal('s-content','');
+    var cb = getEl('s-visible'); if (cb) cb.checked = true;
+    var t = getEl('smodal-title'); if (t) t.textContent = 'Add Section';
+  }
+  openModal('modal-section');
+}
+
+async function saveSection() {
+  clearErr('s-err');
+  var id      = val('s-id');
+  var title   = val('s-title');
+  var content = val('s-content');
+  var visEl   = getEl('s-visible');
+  var imgEl   = getEl('s-image');
+  if (!title || !content) { showErr('s-err','Title and content are required.'); return; }
+  var fd = new FormData();
+  fd.append('title', title);
+  fd.append('content', content);
+  fd.append('is_visible', visEl && visEl.checked ? '1' : '0');
+  if (imgEl && imgEl.files.length) fd.append('image', imgEl.files[0]);
+  var url = id ? '/api/admin/sections/' + id : '/api/admin/sections';
   try {
-    const response = await fetch(`/api/admin/contacts/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-    if (response.ok && data.success) {
-      showNotification('Inquiry message deleted.', 'success');
-      
-      // Remove elements
-      document.getElementById(`inquiry-card-${id}`)?.remove();
-      document.getElementById(`inquiry-card-ov-${id}`)?.remove();
-      
-      // Update counters
-      updateStatCount('stat-total-messages', -1);
-      
-      // If list is empty now, show warning placeholder
-      const listContainer = document.getElementById('inquiriesContainer');
-      if (listContainer && listContainer.children.length === 0) {
-        listContainer.innerHTML = `<p id="noInquiriesText" style="text-align: center; color: var(--color-text-muted); padding: 40px;">No messages received through contact forms yet.</p>`;
-      }
-    } else {
-      showNotification(data.error || 'Failed to delete message.', 'danger');
-    }
-  } catch (err) {
-    showNotification('Connection error. Failed to delete message.', 'danger');
-  }
+    await fetch(url, {method:'POST', body:fd}).then(function(r){ return r.json(); }).then(function(d){ if(!d.success) throw new Error(d.error||'Failed'); });
+    toast(id ? 'Section updated.' : 'Section added.', 'success');
+    closeModal('modal-section');
+    setTimeout(function(){location.reload();}, 600);
+  } catch(e) { showErr('s-err', e.message); }
 }
 
-// ==========================================
-// USER ACCOUNTS API CALLS
-// ==========================================
-
-// Delete administrator user
-async function deleteUser(id) {
-  if (!confirm('Are you sure you want to permanently delete this administrator account?')) {
-    return;
-  }
-
+async function delSection(id) {
   try {
-    const response = await fetch(`/api/admin/users/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-    if (response.ok && data.success) {
-      showNotification('Administrator account deleted.', 'success');
-      document.getElementById(`user-card-${id}`)?.remove();
-      updateStatCount('stat-total-admins', -1);
-    } else {
-      showNotification(data.error || 'Failed to delete account.', 'danger');
-    }
-  } catch (err) {
-    showNotification('Connection error. Failed to delete account.', 'danger');
-  }
+    await api('/api/admin/sections/' + id, {method:'DELETE'});
+    rmEl('srow-' + id);
+    toast('Section deleted.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
 }
 
-// Modal controls for change password
-function openChangePasswordModal(userId, username) {
-  document.getElementById('pwdModalUserId').value = userId;
-  document.getElementById('pwdModalUser').textContent = username;
-  document.getElementById('newPasswordVal').value = '';
-  document.getElementById('pwdModalError').classList.add('hidden');
-  document.getElementById('pwdModal').classList.remove('hidden');
-}
-
-function closeChangePasswordModal() {
-  document.getElementById('pwdModal').classList.add('hidden');
-}
-
-// ==========================================
-// HOMEPAGE SECTIONS API CALLS
-// ==========================================
-
-// Open the edit modal for a homepage section
-function openEditSectionModal(id) {
-  const section = sectionsData.find(s => s.id === id);
-  if (!section) return;
-
-  document.getElementById('editSectionId').value = section.id;
-  document.getElementById('editSectionTitle').value = section.title;
-  document.getElementById('editSectionContent').value = section.content;
-  document.getElementById('editSectionImage').value = '';
-  document.getElementById('editSectionVisible').checked = section.is_visible === 1 || section.is_visible === true;
-  document.getElementById('editSectionError').classList.add('hidden');
-  document.getElementById('sectionModal').classList.remove('hidden');
-}
-
-function closeEditSectionModal() {
-  document.getElementById('sectionModal').classList.add('hidden');
-}
-
-// Move a section up or down in display order
 async function moveSection(id, direction) {
   try {
-    const response = await fetch(`/api/admin/sections/${id}/move`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ direction })
+    var d = await api('/api/admin/sections/' + id + '/move', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({direction: direction})
     });
-
-    const data = await response.json();
-    if (response.ok && data.success) {
-      window.location.reload();
-    } else {
-      showNotification(data.error || 'Failed to reorder section.', 'danger');
+    if (d && d.moved === false) {
+      toast('Already at the ' + (direction==='up'?'top':'bottom') + '.', 'warning');
+      return;
     }
-  } catch (err) {
-    showNotification('Connection error. Failed to reorder section.', 'danger');
-  }
+    // Live DOM swap — stay on current panel
+    var row = getEl('srow-' + id);
+    if (row) {
+      if (direction === 'up') {
+        var prev = row.previousElementSibling;
+        if (prev) row.parentNode.insertBefore(row, prev);
+      } else {
+        var next = row.nextElementSibling;
+        if (next) row.parentNode.insertBefore(next, row);
+      }
+    }
+    toast('Order updated.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
 }
 
-// Delete a homepage section
-async function deleteSection(id) {
-  if (!confirm('Are you sure you want to permanently delete this section?')) {
-    return;
-  }
+// ════════════════════════════════════════════════════════════════
+// EVENTS
+// ════════════════════════════════════════════════════════════════
 
+function openEventModal(id) {
+  clearErr('e-err');
+  setVal('e-image',''); setVal('e-pdf','');
+  if (id) {
+    var ev = null;
+    for (var i = 0; i < eventsData.length; i++) { if (eventsData[i].id === id) { ev = eventsData[i]; break; } }
+    if (!ev) { toast('Reload and try again.', 'warning'); return; }
+    setVal('e-id', ev.id); setVal('e-title', ev.title);
+    setVal('e-date', ev.event_date); setVal('e-time', ev.event_time || '');
+    setVal('e-location', ev.location || ''); setVal('e-category', ev.category || 'General');
+    setVal('e-desc', ev.description);
+    var pb = getEl('e-published'); if (pb) pb.checked = ev.is_published === 1;
+    var t = getEl('emodal-title'); if (t) t.textContent = 'Edit Event';
+  } else {
+    ['e-id','e-title','e-date','e-time','e-location','e-desc'].forEach(function(id){setVal(id,'');});
+    setVal('e-category','General');
+    var pb = getEl('e-published'); if (pb) pb.checked = false;
+    var t = getEl('emodal-title'); if (t) t.textContent = 'New Event';
+  }
+  openModal('modal-event');
+}
+
+async function saveEvent() {
+  clearErr('e-err');
+  var id    = val('e-id');
+  var title = val('e-title');
+  var desc  = val('e-desc');
+  var date  = val('e-date');
+  if (!title || !desc || !date) { showErr('e-err','Title, description, and date are required.'); return; }
+  var fd = new FormData();
+  fd.append('title', title);
+  fd.append('description', desc);
+  fd.append('event_date', date);
+  fd.append('event_time', val('e-time'));
+  fd.append('location',   val('e-location'));
+  fd.append('category',   val('e-category'));
+  var pb = getEl('e-published');
+  fd.append('is_published', pb && pb.checked ? '1' : '0');
+  var imgEl = getEl('e-image'); if (imgEl && imgEl.files.length) fd.append('cover_image', imgEl.files[0]);
+  var pdfEl = getEl('e-pdf');   if (pdfEl && pdfEl.files.length) fd.append('pdf_file',    pdfEl.files[0]);
+  var url = id ? '/api/admin/events/' + id : '/api/admin/events';
   try {
-    const response = await fetch(`/api/admin/sections/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-    if (response.ok && data.success) {
-      showNotification('Section deleted. Reloading page...', 'success');
-      setTimeout(() => window.location.reload(), 700);
-    } else {
-      showNotification(data.error || 'Failed to delete section.', 'danger');
-    }
-  } catch (err) {
-    showNotification('Connection error. Failed to delete section.', 'danger');
-  }
+    await fetch(url, {method:'POST', body:fd}).then(function(r){return r.json();}).then(function(d){if(!d.success)throw new Error(d.error||'Failed');});
+    toast(id ? 'Event updated.' : 'Event created.', 'success');
+    closeModal('modal-event');
+    setTimeout(function(){location.reload();}, 600);
+  } catch(e) { showErr('e-err', e.message); }
 }
 
-// ==========================================
-// VACCINE SCHEDULE API CALLS
-// ==========================================
-
-// Open the edit modal for a vaccine schedule entry
-function openEditVaccineModal(id) {
-  const vaccine = vaccinesData.find(v => v.id === id);
-  if (!vaccine) return;
-
-  document.getElementById('editVaccineId').value = vaccine.id;
-  document.getElementById('editVaccineName').value = vaccine.name;
-  document.getElementById('editVaccineAgeText').value = vaccine.age_text;
-  document.getElementById('editVaccineOffsetDays').value = vaccine.offset_days;
-  document.getElementById('editVaccineDiseases').value = vaccine.diseases || '';
-  document.getElementById('editVaccineError').classList.add('hidden');
-  document.getElementById('vaccineModal').classList.remove('hidden');
-}
-
-function closeEditVaccineModal() {
-  document.getElementById('vaccineModal').classList.add('hidden');
-}
-
-// Delete a vaccine schedule entry
-async function deleteVaccine(id) {
-  if (!confirm('Are you sure you want to permanently delete this vaccine schedule entry?')) {
-    return;
-  }
-
+async function togglePublish(id) {
   try {
-    const response = await fetch(`/api/admin/vaccines/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-    if (response.ok && data.success) {
-      showNotification('Vaccine entry deleted. Reloading page...', 'success');
-      setTimeout(() => window.location.reload(), 700);
-    } else {
-      showNotification(data.error || 'Failed to delete vaccine entry.', 'danger');
+    var d = await api('/api/admin/events/' + id + '/publish', {method:'POST'});
+    var badge = getEl('evst-' + id);
+    if (badge) {
+      badge.textContent  = d.is_published ? 'Published' : 'Draft';
+      badge.className    = 'badge ' + (d.is_published ? 'b-published' : 'b-draft');
     }
-  } catch (err) {
-    showNotification('Connection error. Failed to delete vaccine entry.', 'danger');
-  }
+    toast('Event ' + (d.is_published ? 'published' : 'unpublished') + '.', 'success');
+    for (var i=0;i<eventsData.length;i++){if(eventsData[i].id===id){eventsData[i].is_published=d.is_published;break;}}
+  } catch(e) { toast(e.message, 'danger'); }
 }
+
+async function delEvent(id) {
+  try {
+    await api('/api/admin/events/' + id, {method:'DELETE'});
+    rmEl('evrow-' + id);
+    toast('Event deleted.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// RESOURCES
+// ════════════════════════════════════════════════════════════════
+
+function openResourceModal(id) {
+  clearErr('r-err');
+  if (id) {
+    var rc = null;
+    for (var i = 0; i < resourcesData.length; i++) { if (resourcesData[i].id === id) { rc = resourcesData[i]; break; } }
+    if (!rc) { toast('Reload and try again.', 'warning'); return; }
+    setVal('r-id', rc.id); setVal('r-title', rc.title);
+    setVal('r-type', rc.type || 'GUIDE'); setVal('r-desc', rc.description || '');
+    setVal('r-visible', rc.is_visible ? '1' : '0');
+    var t = getEl('rmodal-title'); if (t) t.textContent = 'Edit Resource';
+  } else {
+    setVal('r-id',''); setVal('r-title',''); setVal('r-type','GUIDE'); setVal('r-desc',''); setVal('r-visible','1');
+    var t = getEl('rmodal-title'); if (t) t.textContent = 'Add Resource';
+  }
+  openModal('modal-resource');
+}
+
+async function saveResource() {
+  clearErr('r-err');
+  var id      = val('r-id');
+  var title   = val('r-title');
+  var typeEl  = getEl('r-type');
+  var visEl   = getEl('r-visible');
+  var desc    = val('r-desc');
+  if (!title) { showErr('r-err', 'Title is required.'); return; }
+  var type    = typeEl ? typeEl.value : 'GUIDE';
+  var visible = visEl ? visEl.value : '1';
+  try {
+    if (id) {
+      await api('/api/admin/resources/' + id + '/meta', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({title:title, type:type, description:desc, is_visible:visible})
+      });
+      // Update local data
+      for (var i = 0; i < resourcesData.length; i++) {
+        if (resourcesData[i].id === parseInt(id)) {
+          resourcesData[i].title = title; resourcesData[i].type = type;
+          resourcesData[i].description = desc; resourcesData[i].is_visible = parseInt(visible);
+          break;
+        }
+      }
+      toast('Resource updated.', 'success');
+    } else {
+      var d = await api('/api/admin/resources', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({title:title, type:type, description:desc})
+      });
+      toast('Resource created.', 'success');
+      // Add to local data and DOM
+      var newRc = {id:d.id, title:title, type:type, description:desc, file_path:'', original_filename:'', is_visible:1};
+      resourcesData.push(newRc);
+      var tbody = getEl('resources-tbody');
+      if (tbody) {
+        var tr = document.createElement('tr');
+        tr.id = 'rcrow-' + d.id;
+        tr.innerHTML = buildResourceRow(newRc);
+        tbody.appendChild(tr);
+      }
+    }
+    closeModal('modal-resource');
+    if (id) setTimeout(function(){location.reload();}, 400);
+  } catch(e) { showErr('r-err', e.message); }
+}
+
+function buildResourceRow(rc) {
+  var fileBadge = rc.file_path
+    ? '<span class="badge" style="background:#D1FAE5;color:#065F46;font-size:.7rem">Attached</span><button class="btn-pdf-view" onclick="openPdf(\'' + rc.file_path + '\')" style="margin-left:6px;font-size:.74rem">View</button>'
+    : '<span class="badge" style="background:#FEE2E2;color:#991B1B;font-size:.7rem">No File</span>';
+  var canDelete = CURRENT_USER_ROLE === 'admin' || CURRENT_USER_ROLE === 'manager';
+  var removeBtn = (rc.file_path && canDelete) ? '<button class="ib ib-del" onclick="delResourceFile(' + rc.id + ')" title="Remove File">🗑📎</button>' : '';
+  var deleteBtn = canDelete ? '<button class="ib ib-del" onclick="delResource(' + rc.id + ')" title="Delete Resource">🗑</button>' : '';
+  return '<td><strong style="font-size:.85rem">' + escHtml(rc.title) + '</strong></td>'
+    + '<td><span class="badge" style="background:#EEF4FF;color:var(--primary);font-size:.7rem">' + escHtml(rc.type) + '</span></td>'
+    + '<td id="rcfile-' + rc.id + '">' + fileBadge + '</td>'
+    + '<td><span class="badge ' + (rc.is_visible ? 'b-published' : 'b-draft') + '">' + (rc.is_visible ? 'Yes' : 'No') + '</span></td>'
+    + '<td><div class="act-row">'
+    + '<button class="ib ib-edit" onclick="openResourceModal(' + rc.id + ')" title="Edit">✎</button>'
+    + '<label class="ib ib-edit" title="Upload File" style="cursor:pointer">📎<input type="file" id="rfile-' + rc.id + '" accept=".pdf,.doc,.docx" style="display:none" onchange="uploadResourceFile(' + rc.id + ',this)"></label>'
+    + removeBtn + deleteBtn
+    + '</div></td>';
+}
+
+async function uploadResourceFile(id, input) {
+  if (!input || !input.files.length) return;
+  var fd = new FormData();
+  fd.append('file', input.files[0]);
+  try {
+    var d = await fetch('/api/admin/resources/' + id + '/file', {method:'POST', body:fd}).then(function(r){return r.json();});
+    if (!d.success) throw new Error(d.error || 'Upload failed.');
+    input.value = '';
+    // Update local data
+    for (var i = 0; i < resourcesData.length; i++) {
+      if (resourcesData[i].id === id) { resourcesData[i].file_path = d.path; resourcesData[i].original_filename = d.original_filename; break; }
+    }
+    // Update file cell in DOM
+    var cell = getEl('rcfile-' + id);
+    if (cell) {
+      cell.innerHTML = '<span class="badge" style="background:#D1FAE5;color:#065F46;font-size:.7rem">Attached</span>'
+        + '<button class="btn-pdf-view" onclick="openPdf(\'' + d.path + '\')" style="margin-left:6px;font-size:.74rem">View</button>';
+    }
+    toast('File uploaded: ' + d.original_filename, 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function delResourceFile(id) {
+  try {
+    await api('/api/admin/resources/' + id + '/file', {method:'DELETE'});
+    for (var i = 0; i < resourcesData.length; i++) {
+      if (resourcesData[i].id === id) { resourcesData[i].file_path = ''; resourcesData[i].original_filename = ''; break; }
+    }
+    var cell = getEl('rcfile-' + id);
+    if (cell) cell.innerHTML = '<span class="badge" style="background:#FEE2E2;color:#991B1B;font-size:.7rem">No File</span>';
+    toast('File removed.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function delResource(id) {
+  try {
+    await api('/api/admin/resources/' + id, {method:'DELETE'});
+    rmEl('rcrow-' + id);
+    resourcesData = resourcesData.filter(function(rc){ return rc.id !== id; });
+    toast('Resource deleted.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// USERS
+// ════════════════════════════════════════════════════════════════
+
+async function createUser() {
+  clearErr('user-create-err');
+  var username = val('nu-username');
+  var password = val('nu-password');
+  var roleEl   = getEl('nu-role');
+  var role     = roleEl ? roleEl.value : 'editor';
+  if (!username || !password) { showErr('user-create-err','Username and password are required.'); return; }
+  try {
+    var d = await api('/api/admin/users', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:username, password:password, role:role})
+    });
+    toast('User "' + username + '" created.', 'success');
+    setVal('nu-username',''); setVal('nu-password',''); if(roleEl) roleEl.value='editor';
+    // Add row to table
+    var tbody = getEl('users-tbody');
+    if (tbody) {
+      var tr = document.createElement('tr');
+      tr.id = 'urow-' + d.userId;
+      tr.innerHTML = '<td><strong>' + escHtml(username) + '</strong></td>'
+        + '<td><span class="badge b-' + escHtml(role) + '">' + escHtml(role) + '</span></td>'
+        + '<td style="color:var(--muted);font-size:.78rem">Just Now</td>'
+        + '<td><div class="act-row">'
+        + '<button class="ib ib-key" onclick="openPwdModal(' + d.userId + ',\'' + username + '\')" title="Change Password">🔑</button>'
+        + (CURRENT_USER_ROLE==='admin'?'<button class="ib ib-del" onclick="delUser('+d.userId+')" title="Delete">🗑</button>':'')
+        + '</div></td>';
+      tbody.appendChild(tr);
+    }
+  } catch(e) { showErr('user-create-err', e.message); }
+}
+
+async function delUser(id) {
+  try {
+    await api('/api/admin/users/' + id, {method:'DELETE'});
+    rmEl('urow-' + id);
+    toast('User deleted.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+function openPwdModal(userId, username) {
+  setVal('pwd-userid', userId);
+  var un = getEl('pwd-username'); if (un) un.textContent = username;
+  setVal('pwd-new', '');
+  clearErr('pwd-err');
+  openModal('modal-pwd');
+}
+
+async function changePwd() {
+  clearErr('pwd-err');
+  var userId = val('pwd-userid');
+  var newPwd = val('pwd-new');
+  if (!newPwd || newPwd.length < 6) { showErr('pwd-err','Password must be at least 6 characters.'); return; }
+  try {
+    await api('/api/admin/users/change-password', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({userId:userId, newPassword:newPwd})
+    });
+    toast('Password updated.', 'success');
+    closeModal('modal-pwd');
+  } catch(e) { showErr('pwd-err', e.message); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════════════════
+
+async function uploadSettingImg(field) {
+  var fi = getEl('fi-' + field);
+  if (!fi || !fi.files.length) { toast('Select an image first.', 'warning'); return; }
+  var fd = new FormData();
+  fd.append('image', fi.files[0]);
+  fd.append('field', field);
+  try {
+    var d = await fetch('/api/admin/upload-setting-image', {method:'POST', body:fd}).then(function(r){return r.json();});
+    if (!d.success) throw new Error(d.error || 'Upload failed.');
+    var box = getEl('prev-' + field);
+    if (box) box.innerHTML = '<img src="' + d.path + '" class="img-prev" alt="">';
+    fi.value = '';
+    toast('Image updated.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function uploadResourcePdf(n) {
+  var fi = getEl('pdf-' + n);
+  if (!fi || !fi.files.length) { toast('Select a PDF first.', 'warning'); return; }
+  var fd = new FormData();
+  fd.append('pdf', fi.files[0]);
+  try {
+    var d = await fetch('/api/admin/resources/' + n + '/pdf', {method:'POST', body:fd}).then(function(r){return r.json();});
+    if (!d.success) throw new Error(d.error || 'Upload failed.');
+    fi.value = '';
+    // Live DOM update — no page reload needed
+    var badge = getEl('res-badge-' + n);
+    if (badge) {
+      badge.textContent = 'PDF attached';
+      badge.style.background = '#D1FAE5';
+      badge.style.color = '#065F46';
+    }
+    var viewSpan = getEl('res-view-' + n);
+    if (viewSpan) {
+      viewSpan.innerHTML = '<button class="btn-pdf-view" onclick="openPdf(\'' + d.path + '\')">View ↗</button>';
+    }
+    var removeSpan = getEl('res-remove-' + n);
+    if (removeSpan && (CURRENT_USER_ROLE === 'admin' || CURRENT_USER_ROLE === 'manager')) {
+      removeSpan.innerHTML = '<button class="btn btn-danger btn-sm" onclick="delResourcePdf(' + n + ')">Remove</button>';
+    }
+    toast('PDF uploaded — live on website now.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function delResourcePdf(n) {
+  try {
+    await api('/api/admin/resources/' + n + '/pdf', {method:'DELETE'});
+    // Live DOM update
+    var badge = getEl('res-badge-' + n);
+    if (badge) {
+      badge.textContent = 'No PDF';
+      badge.style.background = '#FEE2E2';
+      badge.style.color = '#991B1B';
+    }
+    var viewSpan = getEl('res-view-' + n);
+    if (viewSpan) viewSpan.innerHTML = '';
+    var removeSpan = getEl('res-remove-' + n);
+    if (removeSpan) removeSpan.innerHTML = '';
+    toast('PDF removed.', 'success');
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// DOM READY
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+
+  // Sidebar navigation
+  document.querySelectorAll('.nav-link').forEach(function(link) {
+    link.addEventListener('click', function() {
+      switchPanel(link.getAttribute('data-panel'));
+    });
+  });
+
+  // Services form
+  var svf = document.getElementById('services-form');
+  if (svf) {
+    svf.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('save-services-btn');
+      var orig = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Saving...';
+      var obj = {};
+      new FormData(svf).forEach(function(v, k) { obj[k] = v; });
+      // Collect dynamic highlight rows and map to hl_1..hl_8 keys
+      ['vax','fp','anc','autism'].forEach(function(svc) {
+        var list = getEl('hl-' + svc);
+        if (!list) return;
+        var values = [];
+        list.querySelectorAll('.hl-input').forEach(function(inp) {
+          var v = inp.value.trim();
+          if (v) values.push(v);
+        });
+        for (var i = 0; i < 8; i++) {
+          obj['service_' + svc + '_hl_' + (i + 1)] = values[i] || '';
+        }
+      });
+      try {
+        await api('/api/admin/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(obj)
+        });
+        toast('Services saved — live on website now!', 'success');
+      } catch(e) { toast(e.message, 'danger'); }
+      btn.disabled = false; btn.textContent = orig;
+    });
+  }
+
+  // Settings form
+  var sf = document.getElementById('settings-form');
+  if (sf) {
+    sf.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('save-settings-btn');
+      var orig = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Saving...';
+      var obj = {};
+      new FormData(sf).forEach(function(v,k){ obj[k]=v; });
+      try {
+        await api('/api/admin/settings', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(obj)
+        });
+        toast('Settings saved successfully!', 'success');
+      } catch(e) { toast(e.message, 'danger'); }
+      btn.disabled = false; btn.textContent = orig;
+    });
+  }
+});

@@ -19,6 +19,21 @@ db.exec(`
 
 // Migration: add role column to existing databases created before roles were introduced
 try { db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'editor'"); } catch (_) {}
+
+// Audit log table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    username TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_table TEXT,
+    target_id INTEGER,
+    details TEXT,
+    ip TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
 // Ensure the first/only user (original seeded admin) gets admin role if it's still 'editor'
 try {
   const firstUser = db.prepare("SELECT id FROM users ORDER BY id ASC LIMIT 1").get();
@@ -80,6 +95,53 @@ db.exec(`
     display_order INTEGER DEFAULT 0
   );
 `);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    event_date TEXT NOT NULL,
+    event_time TEXT,
+    location TEXT,
+    category TEXT DEFAULT 'General',
+    cover_image TEXT,
+    pdf_path TEXT,
+    is_published INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS resources (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    type TEXT DEFAULT 'GUIDE',
+    description TEXT DEFAULT '',
+    file_path TEXT DEFAULT '',
+    original_filename TEXT DEFAULT '',
+    display_order INTEGER DEFAULT 0,
+    is_visible INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+// Migrate old settings-based resources (resource_1_*, resource_2_*, resource_3_*) into resources table
+try {
+  const resCount = db.prepare('SELECT COUNT(*) as c FROM resources').get();
+  if (resCount.c === 0) {
+    const getSetting = key => {
+      try { const r = db.prepare('SELECT value FROM settings WHERE key=?').get(key); return r ? r.value : ''; } catch(_) { return ''; }
+    };
+    [1, 2, 3].forEach((n, i) => {
+      const title = getSetting('resource_' + n + '_title');
+      if (!title) return;
+      db.prepare('INSERT INTO resources (title, type, description, file_path, display_order) VALUES (?,?,?,?,?)')
+        .run(title, getSetting('resource_' + n + '_type') || 'GUIDE', getSetting('resource_' + n + '_desc') || '', getSetting('resource_' + n + '_pdf') || '', i + 1);
+    });
+    console.log('Resources migrated from settings to resources table.');
+  }
+} catch(_) {}
 
 // 1. Seed Default Admin User
 const userCheck = db.prepare('SELECT COUNT(*) as count FROM users');
@@ -180,14 +242,29 @@ if (settingsCount === 0) {
   console.log('Database seeded with default settings.');
 }
 
-// 2b. Ensure image-related setting keys exist (covers databases created before this feature)
+// 2b. Ensure image-related, resource, and service setting keys exist
 const ensureSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
 const newSettingDefaults = {
   hero_image: '/assets/images/hero.png',
   service_vax_image: '',
   service_fp_image: '',
   service_anc_image: '',
-  service_autism_image: ''
+  service_autism_image: '',
+  // Private Vaccination card (not in original seed)
+  service_pvt_desc: 'Paid specialized immunization schedules, cervical cancer prevention, international travel vaccines, and adult boosters.',
+  // Resource PDFs
+  resource_1_title: 'Child Immunization Guide (Bangla)',
+  resource_1_type:  'GUIDE',
+  resource_1_desc:  'A simple step-by-step guidebook detailing the standard vaccine procedure and handling post-vaccination fever.',
+  resource_1_pdf:   '/uploads/resources/epi-vaccination-schedule.pdf',
+  resource_2_title: 'Family Planning Options Overview',
+  resource_2_type:  'BROCHURE',
+  resource_2_desc:  'Understand the temporary and permanent methods available, their effectiveness, and safety profiles.',
+  resource_2_pdf:   '',
+  resource_3_title: 'Antenatal Care Visit Tracker',
+  resource_3_type:  'CHECKLIST',
+  resource_3_desc:  'A checklist of diagnostic tests, vitamin intakes, and physician visits for every week of pregnancy.',
+  resource_3_pdf:   '',
 };
 for (const [key, value] of Object.entries(newSettingDefaults)) {
   ensureSetting.run(key, value);

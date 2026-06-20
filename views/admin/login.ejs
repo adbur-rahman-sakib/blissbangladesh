@@ -3,150 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store">
   <title>Admin Login | Bliss Bangladesh</title>
-  
-  <!-- Modern Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="/styles.css"> <!-- Fallback utilities -->
-  <link rel="stylesheet" href="/admin.css"> <!-- Custom admin UI -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#0F172A 0%,#0040A5 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,0.25)}
+    .logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+    .logo-icon{width:44px;height:44px;background:#0040A5;border-radius:10px;display:flex;align-items:center;justify-content:center}
+    .logo-text h1{font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:800;color:#0F172A}
+    .logo-text p{font-size:.75rem;color:#64748B}
+    h2{font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:800;color:#0F172A;margin-bottom:6px}
+    .sub{font-size:.85rem;color:#64748B;margin-bottom:28px}
+    .err{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;font-size:.84rem;font-weight:600;margin-bottom:18px;display:none}
+    .err.show{display:block}
+    .form-group{margin-bottom:16px}
+    label{display:block;font-size:.82rem;font-weight:600;color:#374151;margin-bottom:6px}
+    input{width:100%;padding:10px 14px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:.9rem;font-family:'Inter',sans-serif;color:#0F172A;transition:border-color .15s}
+    input:focus{outline:none;border-color:#0040A5}
+    .btn{width:100%;padding:12px;background:#0040A5;color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;margin-top:8px;transition:background .15s}
+    .btn:hover{background:#002d80}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .footer{text-align:center;margin-top:20px;font-size:.78rem;color:#94A3B8}
+  </style>
 </head>
-<body class="admin-auth-body">
-
-  <div class="auth-bg-deco">
-    <div class="plus-shape shape-1">+</div>
-    <div class="plus-shape shape-2">+</div>
-    <div class="plus-shape shape-3">+</div>
-    <div class="circle-shape shape-4"></div>
-  </div>
-
-  <div class="auth-wrapper">
-    <div class="auth-card">
-      <div class="auth-header text-center">
-        <div class="auth-logo">
-          <svg viewBox="0 0 48 48" width="50" height="50" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z" fill="#F8FAFC" />
-            <path d="M24 16.5C24 16.5 20.5 13 18.5 15C16.5 17 17.5 20.5 20.5 23L24 26L27.5 23C30.5 20.5 31.5 17 29.5 15C27.5 13 24 16.5 24 16.5Z" fill="#E53935" />
-            <path d="M12 28C14.5 33 20 36 24 36C28 36 33.5 33 36 28C36 28 32.5 30.5 28.5 28C24.5 25.5 23.5 25.5 19.5 28C15.5 30.5 12 28 12 28Z" fill="#0040A5" />
-            <circle cx="24" cy="11" r="3" fill="#0040A5" />
-          </svg>
-        </div>
-        <h2 class="auth-title">Administrative Portal</h2>
-        <p class="auth-subtitle">Log in to manage appointments, messages, and edit content.</p>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+          <path d="M24 16.5C24 16.5 20.5 13 18.5 15C16.5 17 17.5 20.5 20.5 23L24 26L27.5 23C30.5 20.5 31.5 17 29.5 15C27.5 13 24 16.5 24 16.5Z" fill="#fff"/>
+          <path d="M12 28C14.5 33 20 36 24 36C28 36 33.5 33 36 28C36 28 32.5 30.5 28.5 28C24.5 25.5 23.5 25.5 19.5 28C15.5 30.5 12 28 12 28Z" fill="rgba(255,255,255,0.7)"/>
+        </svg>
       </div>
-
-      <form id="adminLoginForm" class="auth-form">
-        <div id="loginError" class="alert alert-danger hidden"></div>
-
-        <div class="form-group">
-          <label for="username">Username</label>
-          <div class="input-wrapper">
-            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            <input type="text" id="username" name="username" required class="form-control" placeholder="Enter admin username" autocomplete="username">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <div class="label-row">
-            <label for="password">Password</label>
-          </div>
-          <div class="input-wrapper">
-            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <input type="password" id="password" name="password" required class="form-control" placeholder="Enter password" autocomplete="current-password">
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block btn-auth" id="loginBtn">
-          <span>Authenticate</span>
-          <div class="loader hidden" id="loginLoader"></div>
-        </button>
-      </form>
-
-      <div class="auth-footer text-center">
-        <a href="/" class="back-link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
-          </svg>
-          Back to Public Site
-        </a>
+      <div class="logo-text">
+        <h1>Bliss Bangladesh</h1>
+        <p>Admin Panel</p>
       </div>
     </div>
+
+    <h2>Sign In</h2>
+    <p class="sub">Enter your credentials to access the dashboard.</p>
+
+    <div id="errBox" class="err"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn" id="loginBtn">Sign In</button>
+    </form>
+
+    <p class="footer">Restricted access — authorized personnel only</p>
   </div>
 
   <script>
-    // Client-side authentication submission
-    const loginForm = document.getElementById('adminLoginForm');
-    const loginError = document.getElementById('loginError');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginLoader = document.getElementById('loginLoader');
-
-    loginForm.addEventListener('submit', async (e) => {
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      loginError.classList.add('hidden');
-      
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!username || !password) {
-        loginError.textContent = 'Please fill out all fields.';
-        loginError.classList.remove('hidden');
-        return;
-      }
-
-      // Show loader
-      loginBtn.disabled = true;
-      loginLoader.classList.remove('hidden');
-      loginBtn.querySelector('span').textContent = 'Authenticating...';
-
+      var btn    = document.getElementById('loginBtn');
+      var errBox = document.getElementById('errBox');
+      errBox.classList.remove('show');
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
       try {
-        const response = await fetch('/admin/login', {
+        var res  = await fetch('/admin/login', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ username, password })
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value
+          })
         });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          loginBtn.querySelector('span').textContent = 'Redirecting...';
-          window.location.href = '/admin/dashboard';
+        var data = await res.json();
+        if (res.ok && data.success) {
+          window.location.replace('/admin/dashboard');
         } else {
-          loginError.textContent = data.error || 'Authentication failed.';
-          loginError.classList.remove('hidden');
-          loginBtn.disabled = false;
-          loginLoader.classList.add('hidden');
-          loginBtn.querySelector('span').textContent = 'Authenticate';
+          errBox.textContent = data.error || 'Login failed.';
+          errBox.classList.add('show');
+          btn.disabled = false;
+          btn.textContent = 'Sign In';
         }
       } catch (err) {
-        loginError.textContent = 'Connection error. Please try again.';
-        loginError.classList.remove('hidden');
-        loginBtn.disabled = false;
-        loginLoader.classList.add('hidden');
-        loginBtn.querySelector('span').textContent = 'Authenticate';
-      }
-    });
-
-    // Disable right-click and keyboard shortcuts on the login page for basic inspector shielding
-    document.addEventListener('contextmenu', e => e.preventDefault());
-    document.addEventListener('keydown', e => {
-      if (
-        e.key === 'F12' || 
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) || 
-        (e.ctrlKey && e.key === 'U')
-      ) {
-        e.preventDefault();
+        errBox.textContent = 'Connection error. Please try again.';
+        errBox.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
       }
     });
   </script>
