@@ -191,7 +191,7 @@ function noCache(req, res, next) {
 // ── Auth middleware ───────────────────────────────────────────────
 function requireAuth(req, res, next) {
   if (!req.session || !req.session.adminId) {
-    if (req.xhr || (req.headers.accept || '').includes('json')) {
+    if (req.path.startsWith('/api/') || req.xhr || (req.headers.accept || '').includes('json')) {
       return res.status(401).json({ error: 'Session expired. Please log in.' });
     }
     return res.redirect('/admin/login');
@@ -751,6 +751,19 @@ app.use((err, req, res, next) => {
 // To generate certs: mkcert -install && mkcert -key-file certs/localhost-key.pem -cert-file certs/localhost.pem localhost 127.0.0.1
 const CERT = path.join(__dirname, 'certs', 'localhost.pem');
 const KEY  = path.join(__dirname, 'certs', 'localhost-key.pem');
+
+// Global error handler — ensures Multer, auth, and any middleware errors on
+// /api/ routes always return JSON instead of Express's default HTML error page.
+app.use((err, req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    const status = err.status || err.statusCode || 500;
+    const msg = err.code === 'LIMIT_FILE_SIZE'
+      ? 'File too large.'
+      : (err.message || 'Server error.');
+    return res.status(status).json({ error: msg });
+  }
+  next(err);
+});
 
 if (fs.existsSync(CERT) && fs.existsSync(KEY)) {
   require('https').createServer({ cert: fs.readFileSync(CERT), key: fs.readFileSync(KEY) }, app)
