@@ -568,23 +568,6 @@
     ];
     var _activeSocials = _socials.filter(function(s){ return settings[s.key] && settings[s.key].trim(); });
   %>
-  <% if (_activeSocials.length > 0) { %>
-  <section class="social-connect-section">
-    <div class="social-connect-inner">
-      <h2 class="social-connect-title">Connect with us.</h2>
-      <div class="social-icons-row">
-        <% _activeSocials.forEach(function(s){ %>
-        <a href="<%= settings[s.key] %>" target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="<%= s.label %>">
-          <div class="social-icon-circle" style="background:<%= s.color %>">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><%- s.icon %></svg>
-          </div>
-          <span class="social-icon-label"><%= s.label %></span>
-        </a>
-        <% }); %>
-      </div>
-    </div>
-  </section>
-  <% } %>
 
   <section class="contact-section" id="contact">
     <div class="container">
@@ -618,12 +601,21 @@
               </div>
               <div>
                 <h4>Social Presence</h4>
-                <p style="margin:0 0 4px">
-                  <a href="https://www.facebook.com/blissbangladesh01" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;text-underline-offset:3px">facebook.com/blissbangladesh01</a>
-                </p>
-                <p style="margin:0">
-                  <a href="https://www.linkedin.com/company/bliss-bangladesh" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;text-underline-offset:3px">linkedin.com/company/bliss-bangladesh</a>
-                </p>
+                <% if (_activeSocials.length > 0) { %>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">
+                  <% _activeSocials.forEach(function(s){ %>
+                  <a href="<%= settings[s.key] %>" target="_blank" rel="noopener noreferrer"
+                     title="<%= s.label %>"
+                     style="display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;background:<%= s.color %>;color:#fff;text-decoration:none;font-size:0.8rem;font-weight:600;font-family:var(--font-body);transition:opacity .15s"
+                     onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><%- s.icon %></svg>
+                    <%= s.label %>
+                  </a>
+                  <% }); %>
+                </div>
+                <% } else { %>
+                <p style="margin:6px 0 0;color:var(--color-muted);font-size:.84rem">Follow us on social media.</p>
+                <% } %>
               </div>
             </div>
           </div>
