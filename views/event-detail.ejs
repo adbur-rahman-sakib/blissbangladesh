@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= event.title %> | Bliss Bangladesh</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body { background: #F8FAFC; margin: 0; font-family: 'Inter', sans-serif; }
+    .page-nav { background: #fff; border-bottom: 1px solid #E2E8F0; padding: 0 60px; }
+    .page-nav-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .page-nav-brand { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.15rem; color: #0040A5; text-decoration: none; }
+    .page-nav-links { display: flex; gap: 28px; }
+    .page-nav-links a { font-family: 'Inter', sans-serif; font-size: 0.9rem; color: #475569; text-decoration: none; font-weight: 500; }
+    .page-nav-links a:hover { color: #0040A5; }
+    .event-detail-wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0040A5; font-size: 0.88rem; font-weight: 600; text-decoration: none; margin-bottom: 28px; }
+    .back-link:hover { color: #002d80; }
+    .event-header { margin-bottom: 32px; }
+    .event-category-badge { display: inline-block; padding: 4px 14px; border-radius: 14px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 14px; }
+    .cat-vaccination    { background: #DBEAFE; color: #1D4ED8; }
+    .cat-health-camp    { background: #D1FAE5; color: #065F46; }
+    .cat-seminar        { background: #FEF3C7; color: #92400E; }
+    .cat-workshop       { background: #F3E8FF; color: #6B21A8; }
+    .cat-community      { background: #FFE4E6; color: #9F1239; }
+    .cat-general        { background: #F1F5F9; color: #475569; }
+    .event-title { font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800; color: #0F172A; line-height: 1.25; margin-bottom: 20px; }
+    .event-meta-bar { display: flex; flex-wrap: wrap; gap: 20px; padding: 16px 0; border-top: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0; margin-bottom: 32px; }
+    .event-meta-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #475569; }
+    .event-meta-item svg { color: #0040A5; flex-shrink: 0; }
+    .event-meta-label { font-weight: 600; color: #0F172A; }
+    .event-img-wrap { display: block; cursor: zoom-in; border-radius: 14px; overflow: hidden; margin-bottom: 36px; background: #EEF4FF; text-align: center; }
+    .event-img-wrap:focus { outline: 2px solid #0040A5; }
+    .event-cover-img { width: 100%; height: auto; display: block; object-fit: contain; pointer-events: none; user-select: none; -webkit-user-drag: none; border-radius: 14px; }
+    /* Lightbox */
+    #ev-lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.93); z-index: 9999; align-items: center; justify-content: center; cursor: zoom-out; }
+    #ev-lightbox.open { display: flex; }
+    #ev-lightbox img { max-width: 95vw; max-height: 92vh; object-fit: contain; border-radius: 6px; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+    #ev-lb-close { position: absolute; top: 14px; right: 18px; background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 1.6rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+    #ev-lb-close:hover { background: rgba(255,255,255,0.28); }
+    .event-description { font-size: 1rem; line-height: 1.8; color: #334155; white-space: pre-line; margin-bottom: 48px; }
+    .pdf-section { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden; margin-bottom: 40px; }
+    .pdf-section-header { padding: 18px 24px; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: space-between; }
+    .pdf-section-header h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #0F172A; margin: 0; display: flex; align-items: center; gap: 8px; }
+    .pdf-download-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: #0040A5; color: #fff; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-decoration: none; font-family: 'Inter', sans-serif; }
+    .pdf-download-btn:hover { background: #002d80; }
+    .pdf-viewer { width: 100%; height: 700px; border: none; display: block; }
+    .pdf-fallback { padding: 40px; text-align: center; color: #64748B; }
+    @media (max-width: 600px) {
+      .page-nav { padding: 0 20px; }
+      .event-detail-wrap { padding: 28px 16px 60px; }
+      .event-title { font-size: 1.5rem; }
+      .pdf-viewer { height: 400px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="page-nav">
+    <div class="page-nav-inner">
+      <a href="/" class="page-nav-brand">Bliss Bangladesh</a>
+      <div class="page-nav-links">
+        <a href="/">Home</a>
+        <a href="/events">Events</a>
+        <a href="/#contact">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="event-detail-wrap">
+    <a href="/events" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Events
+    </a>
+
+    <div class="event-header">
+      <%
+        const catClass = {
+          'Vaccination Drive': 'cat-vaccination',
+          'Health Camp': 'cat-health-camp',
+          'Seminar': 'cat-seminar',
+          'Workshop': 'cat-workshop',
+          'Community Outreach': 'cat-community',
+        }[event.category] || 'cat-general';
+        const dateStr = new Date(event.event_date).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      %>
+      <span class="event-category-badge <%= catClass %>"><%= event.category %></span>
+      <h1 class="event-title"><%= event.title %></h1>
+
+      <div class="event-meta-bar">
+        <div class="event-meta-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div><span class="event-meta-label">Date</span><br><%= dateStr %></div>
+        </div>
+        <% if (event.event_time) { %>
+        <div class="event-meta-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div><span class="event-meta-label">Time</span><br><%= event.event_time %></div>
+        </div>
+        <% } %>
+        <% if (event.location) { %>
+        <div class="event-meta-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div><span class="event-meta-label">Location</span><br><%= event.location %></div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (event.cover_image) { %>
+      <div class="event-img-wrap" role="button" tabindex="0" aria-label="View full image"
+           onclick="evLbOpen(this)" onkeydown="if(event.key==='Enter')evLbOpen(this)"
+           oncontextmenu="return false">
+        <img src="<%= event.cover_image %>" alt="<%= event.title %>" class="event-cover-img" draggable="false">
+      </div>
+    <% } %>
+
+    <div class="event-description"><%= event.description %></div>
+
+    <% if (event.pdf_path) { %>
+    <div class="pdf-section">
+      <div class="pdf-section-header">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E53935" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Event Document / Brochure
+        </h3>
+        <a href="<%= event.pdf_path %>" download class="pdf-download-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PDF
+        </a>
+      </div>
+      <iframe class="pdf-viewer" src="<%= event.pdf_path %>#toolbar=1&navpanes=0" title="Event Document">
+        <div class="pdf-fallback">
+          <p>PDF preview not supported in your browser.</p>
+          <a href="<%= event.pdf_path %>" download class="pdf-download-btn">Download PDF instead</a>
+        </div>
+      </iframe>
+    </div>
+    <% } %>
+
+    <a href="/events" class="back-link" style="margin-top: 16px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to All Events
+    </a>
+  </div>
+  <!-- Lightbox -->
+  <div id="ev-lightbox" onclick="evLbClose()" oncontextmenu="return false">
+    <button id="ev-lb-close" onclick="evLbClose();event.stopPropagation()" aria-label="Close">&#x2715;</button>
+    <img id="ev-lb-img" src="" alt="">
+  </div>
+  <script>
+    function evLbOpen(wrap) {
+      var img = wrap.querySelector('img');
+      document.getElementById('ev-lb-img').src = img.src;
+      document.getElementById('ev-lb-img').alt = img.alt;
+      document.getElementById('ev-lightbox').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function evLbClose() {
+      document.getElementById('ev-lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') evLbClose(); });
+  </script>
+</body>
+</html>
