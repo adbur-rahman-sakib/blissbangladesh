@@ -6,3 +6,6 @@ public/uploads/*
 !public/uploads/.gitkeep
 certs/
 .vscode/
+admin.html
+setup-supabase.sql
+supabase-config.js
