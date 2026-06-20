@@ -265,6 +265,13 @@ const newSettingDefaults = {
   resource_3_type:  'CHECKLIST',
   resource_3_desc:  'A checklist of diagnostic tests, vitamin intakes, and physician visits for every week of pregnancy.',
   resource_3_pdf:   '',
+  // Social media links (empty = hidden on site)
+  social_facebook:  '',
+  social_linkedin:  '',
+  social_twitter:   '',
+  social_instagram: '',
+  social_youtube:   '',
+  social_tiktok:    '',
 };
 for (const [key, value] of Object.entries(newSettingDefaults)) {
   ensureSetting.run(key, value);

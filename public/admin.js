@@ -40,7 +40,7 @@ var panelTitles = {
   overview:'Overview', bookings:'Appointments', contacts:'Inquiries',
   events:'Events', vaccines:'Vaccine Schedule', sections:'Page Sections',
   resources:'Health Resources', services:'Our Services', settings:'Site Settings',
-  users:'User Accounts', audit:'Audit Log', profile:'My Profile'
+  users:'User Accounts', audit:'Audit Log', profile:'My Profile', social:'Social Media'
 };
 
 function switchPanel(name) {
@@ -725,6 +725,28 @@ document.addEventListener('DOMContentLoaded', function() {
           body: JSON.stringify(obj)
         });
         toast('Services saved — live on website now!', 'success');
+      } catch(e) { toast(e.message, 'danger'); }
+      btn.disabled = false; btn.textContent = orig;
+    });
+  }
+
+  // Social media form
+  var socf = document.getElementById('social-form');
+  if (socf) {
+    socf.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('save-social-btn');
+      var orig = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Saving...';
+      var obj = {};
+      new FormData(socf).forEach(function(v, k) { obj[k] = v; });
+      try {
+        await api('/api/admin/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(obj)
+        });
+        toast('Social links saved — live on website now!', 'success');
       } catch(e) { toast(e.message, 'danger'); }
       btn.disabled = false; btn.textContent = orig;
     });
