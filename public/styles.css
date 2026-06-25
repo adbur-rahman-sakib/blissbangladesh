@@ -198,12 +198,13 @@ button, select, input, textarea {
 .logo-area {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0;
 }
 
 .logo-text {
   display: flex;
   flex-direction: column;
+  margin-left: -20px;
 }
 
 .logo-title {
