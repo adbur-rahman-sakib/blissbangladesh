@@ -173,7 +173,7 @@ button, select, input, textarea {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 80px;
+  height: 100px;
 }
 
 /* Authority logos in header */
@@ -199,12 +199,13 @@ button, select, input, textarea {
   display: flex;
   align-items: center;
   gap: 0;
+  margin-left: -20px;
 }
 
 .logo-text {
   display: flex;
   flex-direction: column;
-  margin-left: -20px;
+  margin-left: -50px;
 }
 
 .logo-title {
