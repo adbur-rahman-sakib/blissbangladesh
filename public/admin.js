@@ -9,6 +9,174 @@ try { var _s = document.getElementById('d-sections');  if(_s) sectionsData  = JS
 try { var _e = document.getElementById('d-events');    if(_e) eventsData    = JSON.parse(_e.textContent); } catch(e){}
 try { var _r = document.getElementById('d-resources'); if(_r) resourcesData = JSON.parse(_r.textContent); } catch(e){}
 
+// ── Custom Date Picker ─────────────────────────────────────────────
+var _adminPickerRegistry = [];
+var _CAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var _CAL_DAYS   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function _calEl(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
+function _calFmt(d) { return d.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'}); }
+function _calStr(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+function createAdminDatePicker(opts) {
+  var TODAY = new Date(); TODAY.setHours(0,0,0,0);
+  var minDate = opts.minDate || null;
+  var maxDate = opts.maxDate || null;
+  var sel     = opts.defaultDate ? new Date(opts.defaultDate) : null;
+  var view    = 'days';
+  var dispYear  = (sel || TODAY).getFullYear();
+  var dispMonth = (sel || TODAY).getMonth();
+  var yearStart = Math.floor((sel || TODAY).getFullYear() / 20) * 20 + 1;
+
+  var widget  = document.getElementById(opts.widgetId);
+  var trigger = document.getElementById(opts.triggerId);
+  var txtEl   = document.getElementById(opts.triggerTextId);
+  var popup   = document.getElementById(opts.popupId);
+  var hidden  = opts.hiddenId ? document.getElementById(opts.hiddenId) : null;
+  if (!widget || !trigger || !popup) return { getValue:function(){return '';}, reset:function(){}, close:function(){}, setDate:function(){} };
+
+  function isDis(date) {
+    if (minDate && date < minDate) return true;
+    if (maxDate && date > maxDate) return true;
+    return false;
+  }
+  function updateTrigger() {
+    if (!txtEl) return;
+    if (sel) { txtEl.textContent = _calFmt(sel); txtEl.className = 'dob-trigger-date'; }
+    else      { txtEl.textContent = opts.placeholder || 'Select date'; txtEl.className = 'dob-trigger-placeholder'; }
+    if (hidden) hidden.value = sel ? _calStr(sel) : '';
+  }
+  function openPopup() {
+    _adminPickerRegistry.forEach(function(p){ p.close(); });
+    popup.style.left = '0'; popup.style.right = 'auto';
+    popup.classList.remove('hidden');
+    trigger.classList.add('open'); trigger.setAttribute('aria-expanded','true');
+    var rect = popup.getBoundingClientRect();
+    if (rect.right > window.innerWidth - 8) { popup.style.left = 'auto'; popup.style.right = '0'; }
+  }
+  function closePopup() { popup.classList.add('hidden'); trigger.classList.remove('open'); trigger.setAttribute('aria-expanded','false'); }
+
+  function makeHdr(wrap, title, onTitle, onPrev, onNext) {
+    var hdr  = _calEl('div','cal-header');
+    var prev = _calEl('button','cal-nav-btn'); prev.type='button'; prev.innerHTML='&#8249;'; prev.onclick=onPrev;
+    var ttl  = _calEl('button','cal-title-btn'); ttl.type='button'; ttl.textContent=title; ttl.onclick=onTitle;
+    var next = _calEl('button','cal-nav-btn'); next.type='button'; next.innerHTML='&#8250;'; next.onclick=onNext;
+    hdr.appendChild(prev); hdr.appendChild(ttl); hdr.appendChild(next);
+    wrap.appendChild(hdr);
+  }
+  function renderDays(wrap) {
+    makeHdr(wrap, _CAL_MONTHS[dispMonth]+' '+dispYear,
+      function(){ view='months'; render(); },
+      function(){ dispMonth--; if(dispMonth<0){dispMonth=11;dispYear--;} render(); },
+      function(){ dispMonth++; if(dispMonth>11){dispMonth=0;dispYear++;} render(); }
+    );
+    var hdrRow = _calEl('div','cal-day-headers');
+    _CAL_DAYS.forEach(function(d){ var dh=_calEl('div','cal-day-header'); dh.textContent=d; hdrRow.appendChild(dh); });
+    wrap.appendChild(hdrRow);
+    var grid    = _calEl('div','cal-grid');
+    var firstDow = new Date(dispYear, dispMonth, 1).getDay();
+    var offset   = firstDow === 0 ? 6 : firstDow - 1;
+    var dimCur   = new Date(dispYear, dispMonth+1, 0).getDate();
+    var dimPrev  = new Date(dispYear, dispMonth,   0).getDate();
+    var cells = [];
+    for (var i=offset-1; i>=0; i--) cells.push({d:dimPrev-i, m:dispMonth-1, y:dispYear, out:true});
+    for (var d=1; d<=dimCur; d++)   cells.push({d:d,          m:dispMonth,   y:dispYear, out:false});
+    while (cells.length < 42)       cells.push({d:cells.length-offset-dimCur+1, m:dispMonth+1, y:dispYear, out:true});
+    cells.forEach(function(cell) {
+      var btn = _calEl('button','cal-day-btn'); btn.type='button'; btn.textContent=cell.d;
+      if (cell.out) btn.classList.add('cal-outside');
+      var cellDate = new Date(cell.y, cell.m, cell.d); cellDate.setHours(0,0,0,0);
+      var dis  = isDis(cellDate);
+      var isSel = !cell.out && sel && cellDate.getTime() === new Date(sel.getFullYear(),sel.getMonth(),sel.getDate()).getTime();
+      var isTod = !cell.out && cellDate.getTime() === TODAY.getTime();
+      if (isSel) btn.classList.add('cal-selected');
+      else if (isTod) btn.classList.add('cal-today');
+      if (dis) btn.classList.add('cal-disabled');
+      btn.onclick = function() {
+        if (dis) return;
+        sel = cellDate;
+        if (cell.out) { dispMonth=cell.m; dispYear=cell.y; if(dispMonth<0){dispMonth=11;dispYear--;} if(dispMonth>11){dispMonth=0;dispYear++;} }
+        render(); updateTrigger(); closePopup();
+      };
+      grid.appendChild(btn);
+    });
+    wrap.appendChild(grid);
+  }
+  function renderMonths(wrap) {
+    makeHdr(wrap, String(dispYear),
+      function(){ yearStart=Math.floor(dispYear/20)*20+1; view='years'; render(); },
+      function(){ dispYear--; render(); },
+      function(){ dispYear++; render(); }
+    );
+    var grid = _calEl('div','cal-month-grid');
+    _CAL_MONTHS.forEach(function(m,i){
+      var btn = _calEl('button','cal-month-btn'); btn.type='button'; btn.textContent=m;
+      var fom = new Date(dispYear,i,1); fom.setHours(0,0,0,0);
+      var lom = new Date(dispYear,i+1,0); lom.setHours(0,0,0,0);
+      var allDis = (maxDate && fom > maxDate) || (minDate && lom < minDate);
+      var isSel  = sel && i===sel.getMonth() && dispYear===sel.getFullYear();
+      var isTod  = i===TODAY.getMonth() && dispYear===TODAY.getFullYear();
+      if (isSel) btn.classList.add('cal-selected'); else if(isTod) btn.classList.add('cal-today');
+      if (allDis) btn.classList.add('cal-disabled');
+      btn.onclick = function(){ if(allDis) return; dispMonth=i; view='days'; render(); };
+      grid.appendChild(btn);
+    });
+    wrap.appendChild(grid);
+  }
+  function renderYears(wrap) {
+    var end = yearStart + 19;
+    makeHdr(wrap, yearStart+' – '+end,
+      function(){ yearStart-=20; render(); },
+      function(){ yearStart-=20; render(); },
+      function(){ yearStart+=20; render(); }
+    );
+    var grid = _calEl('div','cal-year-grid');
+    for (var y=yearStart; y<=end; y++) {
+      (function(y){
+        var btn = _calEl('button','cal-year-btn'); btn.type='button'; btn.textContent=y;
+        var allDis = (maxDate && y > maxDate.getFullYear()) || (minDate && y < minDate.getFullYear());
+        var isSel  = sel && y===sel.getFullYear();
+        var isTod  = y===TODAY.getFullYear();
+        if (isSel) btn.classList.add('cal-selected'); else if(isTod) btn.classList.add('cal-today');
+        if (allDis) btn.classList.add('cal-disabled');
+        btn.onclick = function(){ if(allDis) return; dispYear=y; view='months'; render(); };
+        grid.appendChild(btn);
+      })(y);
+    }
+    wrap.appendChild(grid);
+  }
+  function render() {
+    widget.innerHTML = '';
+    if (view === 'days') renderDays(widget);
+    else if (view === 'months') renderMonths(widget);
+    else renderYears(widget);
+  }
+  function reset() {
+    sel = null; view = 'days';
+    dispYear = TODAY.getFullYear(); dispMonth = TODAY.getMonth();
+    render(); updateTrigger(); closePopup();
+  }
+  function setDate(dateStr) {
+    if (!dateStr) { reset(); return; }
+    var d = new Date(dateStr); d.setHours(0,0,0,0);
+    if (isNaN(d.getTime())) { reset(); return; }
+    sel = d; dispYear = d.getFullYear(); dispMonth = d.getMonth(); view = 'days';
+    render(); updateTrigger();
+  }
+
+  render(); updateTrigger();
+  trigger.addEventListener('click', function(e) { e.stopPropagation(); popup.classList.contains('hidden') ? openPopup() : closePopup(); });
+  popup.addEventListener('click', function(e) { e.stopPropagation(); });
+  document.addEventListener('click', function() { if (!popup.classList.contains('hidden')) closePopup(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closePopup(); });
+
+  var instance = { getValue: function(){ return sel ? _calStr(sel) : ''; }, reset: reset, close: closePopup, setDate: setDate };
+  _adminPickerRegistry.push(instance);
+  return instance;
+}
+
+var eventDatePicker = null;
+var eventEndDatePicker = null;
+
 // ── Highlight row helpers (Services panel) ────────────────────────
 function addHlRow(listId) {
   var list = getEl(listId);
@@ -358,13 +526,17 @@ function openEventModal(id) {
     for (var i = 0; i < eventsData.length; i++) { if (eventsData[i].id === id) { ev = eventsData[i]; break; } }
     if (!ev) { toast('Reload and try again.', 'warning'); return; }
     setVal('e-id', ev.id); setVal('e-title', ev.title);
-    setVal('e-date', ev.event_date); setVal('e-time', ev.event_time || '');
+    if (eventDatePicker) eventDatePicker.setDate(ev.event_date || '');
+    if (eventEndDatePicker) eventEndDatePicker.setDate(ev.event_end_date || '');
+    setVal('e-time', ev.event_time || '');
     setVal('e-location', ev.location || ''); setVal('e-category', ev.category || 'General');
     setVal('e-desc', ev.description);
     var pb = getEl('e-published'); if (pb) pb.checked = ev.is_published === 1;
     var t = getEl('emodal-title'); if (t) t.textContent = 'Edit Event';
   } else {
-    ['e-id','e-title','e-date','e-time','e-location','e-desc'].forEach(function(id){setVal(id,'');});
+    ['e-id','e-title','e-time','e-location','e-desc'].forEach(function(id){setVal(id,'');});
+    if (eventDatePicker) eventDatePicker.reset();
+    if (eventEndDatePicker) eventEndDatePicker.reset();
     setVal('e-category','General');
     var pb = getEl('e-published'); if (pb) pb.checked = false;
     var t = getEl('emodal-title'); if (t) t.textContent = 'New Event';
@@ -377,12 +549,14 @@ async function saveEvent() {
   var id    = val('e-id');
   var title = val('e-title');
   var desc  = val('e-desc');
-  var date  = val('e-date');
-  if (!title || !desc || !date) { showErr('e-err','Title, description, and date are required.'); return; }
+  var date    = eventDatePicker    ? eventDatePicker.getValue()    : val('e-date');
+  var endDate = eventEndDatePicker ? eventEndDatePicker.getValue() : val('e-end-date');
+  if (!title || !desc) { showErr('e-err','Title and description are required.'); return; }
   var fd = new FormData();
   fd.append('title', title);
   fd.append('description', desc);
   fd.append('event_date', date);
+  fd.append('event_end_date', endDate);
   fd.append('event_time', val('e-time'));
   fd.append('location',   val('e-location'));
   fd.append('category',   val('e-category'));
@@ -687,6 +861,18 @@ async function delResourcePdf(n) {
 // DOM READY
 // ════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
+
+  // Event date pickers
+  eventDatePicker = createAdminDatePicker({
+    widgetId: 'e-date-widget', triggerId: 'e-date-trigger',
+    triggerTextId: 'e-date-trigger-text', popupId: 'e-date-popup',
+    hiddenId: 'e-date', placeholder: 'Start date'
+  });
+  eventEndDatePicker = createAdminDatePicker({
+    widgetId: 'e-end-date-widget', triggerId: 'e-end-date-trigger',
+    triggerTextId: 'e-end-date-trigger-text', popupId: 'e-end-date-popup',
+    hiddenId: 'e-end-date', placeholder: 'End date'
+  });
 
   // Sidebar navigation
   document.querySelectorAll('.nav-link').forEach(function(link) {

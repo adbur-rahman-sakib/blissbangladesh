@@ -19,6 +19,7 @@ db.exec(`
 
 // Migration: add role column to existing databases created before roles were introduced
 try { db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'editor'"); } catch (_) {}
+try { db.exec("ALTER TABLE events ADD COLUMN event_end_date TEXT DEFAULT ''"); } catch (_) {}
 
 // Audit log table
 db.exec(`

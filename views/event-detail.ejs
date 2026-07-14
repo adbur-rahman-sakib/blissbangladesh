@@ -117,16 +117,31 @@
           'Workshop': 'cat-workshop',
           'Community Outreach': 'cat-community',
         }[event.category] || 'cat-general';
-        const dateStr = new Date(event.event_date).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+        function fmtRange(s, e) {
+          if (!s) return '';
+          const sd = new Date(s), ed = e ? new Date(e) : null;
+          const fmt = (d, opts) => d.toLocaleDateString('en-GB', opts);
+          const full = { weekday:'long', day:'numeric', month:'long', year:'numeric' };
+          const fullNoWd = { day:'numeric', month:'long', year:'numeric' };
+          if (!ed || s === e) return fmt(sd, full);
+          if (sd.getFullYear()===ed.getFullYear() && sd.getMonth()===ed.getMonth())
+            return fmt(sd, full)+' – '+sd.getDate()+'–'+fmt(ed, fullNoWd);
+          if (sd.getFullYear()===ed.getFullYear())
+            return fmt(sd, full)+' – '+fmt(ed, {day:'numeric',month:'long',year:'numeric'});
+          return fmt(sd, full)+' – '+fmt(ed, fullNoWd);
+        }
+        const dateStr = fmtRange(event.event_date, event.event_end_date);
       %>
       <span class="event-category-badge <%= catClass %>"><%= event.category %></span>
       <h1 class="event-title"><%= event.title %></h1>
 
       <div class="event-meta-bar">
+        <% if (dateStr) { %>
         <div class="event-meta-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <div><span class="event-meta-label">Date</span><br><%= dateStr %></div>
+          <div><span class="event-meta-label"><%= event.event_end_date ? 'Dates' : 'Date' %></span><br><%= dateStr %></div>
         </div>
+        <% } %>
         <% if (event.event_time) { %>
         <div class="event-meta-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>

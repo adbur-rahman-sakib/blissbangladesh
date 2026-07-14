@@ -253,7 +253,7 @@ app.get('/events/:id', (req, res) => {
 
 app.get('/api/events', (req, res) => {
   try {
-    res.json(db.prepare('SELECT id,title,event_date,event_time,location,category,cover_image FROM events WHERE is_published=1 ORDER BY event_date ASC LIMIT 6').all());
+    res.json(db.prepare('SELECT id,title,event_date,event_end_date,event_time,location,category,cover_image FROM events WHERE is_published=1 ORDER BY event_date ASC LIMIT 6').all());
   } catch (err) { res.status(500).json({ error: 'Failed.' }); }
 });
 
@@ -590,11 +590,11 @@ const EVENT_FIELDS = [{ name: 'cover_image', maxCount: 1 }, { name: 'pdf_file', 
 
 app.post('/api/admin/events', requireAuth, uploadEvent.fields(EVENT_FIELDS), (req, res) => {
   try {
-    const { title, description, event_date, event_time, location, category, is_published } = req.body;
-    if (!title || !description || !event_date) return res.status(400).json({ error: 'Title, description, and date required.' });
+    const { title, description, event_date, event_end_date, event_time, location, category, is_published } = req.body;
+    if (!title || !description) return res.status(400).json({ error: 'Title and description required.' });
     const cover_image = req.files?.cover_image ? '/uploads/events/' + req.files.cover_image[0].filename : null;
     const pdf_path    = req.files?.pdf_file    ? '/uploads/events/' + req.files.pdf_file[0].filename    : null;
-    const r = db.prepare('INSERT INTO events (title,description,event_date,event_time,location,category,cover_image,pdf_path,is_published) VALUES (?,?,?,?,?,?,?,?,?)').run(title, description, event_date, event_time || '', location || '', category || 'General', cover_image, pdf_path, is_published === '1' ? 1 : 0);
+    const r = db.prepare('INSERT INTO events (title,description,event_date,event_end_date,event_time,location,category,cover_image,pdf_path,is_published) VALUES (?,?,?,?,?,?,?,?,?,?)').run(title, description, event_date || '', event_end_date || '', event_time || '', location || '', category || 'General', cover_image, pdf_path, is_published === '1' ? 1 : 0);
     audit(req, 'CREATE', 'events', r.lastInsertRowid, `"${title}"`);
     res.json({ success: true, eventId: r.lastInsertRowid });
   } catch (err) { res.status(500).json({ error: 'Create failed.' }); }
@@ -603,15 +603,15 @@ app.post('/api/admin/events', requireAuth, uploadEvent.fields(EVENT_FIELDS), (re
 app.post('/api/admin/events/:id', requireAuth, uploadEvent.fields(EVENT_FIELDS), (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, event_date, event_time, location, category, is_published } = req.body;
-    if (!title || !description || !event_date) return res.status(400).json({ error: 'Required fields missing.' });
+    const { title, description, event_date, event_end_date, event_time, location, category, is_published } = req.body;
+    if (!title || !description) return res.status(400).json({ error: 'Title and description required.' });
     const existing = db.prepare('SELECT * FROM events WHERE id=?').get(id);
     if (!existing) return res.status(404).json({ error: 'Not found.' });
     let cover_image = existing.cover_image;
     let pdf_path    = existing.pdf_path;
     if (req.files?.cover_image) { delFile(cover_image); cover_image = '/uploads/events/' + req.files.cover_image[0].filename; }
     if (req.files?.pdf_file)    { delFile(pdf_path);    pdf_path    = '/uploads/events/' + req.files.pdf_file[0].filename;    }
-    db.prepare('UPDATE events SET title=?,description=?,event_date=?,event_time=?,location=?,category=?,cover_image=?,pdf_path=?,is_published=? WHERE id=?').run(title, description, event_date, event_time || '', location || '', category || 'General', cover_image, pdf_path, is_published === '1' ? 1 : 0, id);
+    db.prepare('UPDATE events SET title=?,description=?,event_date=?,event_end_date=?,event_time=?,location=?,category=?,cover_image=?,pdf_path=?,is_published=? WHERE id=?').run(title, description, event_date || '', event_end_date || '', event_time || '', location || '', category || 'General', cover_image, pdf_path, is_published === '1' ? 1 : 0, id);
     audit(req, 'UPDATE', 'events', id, `"${title}"`);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: 'Update failed.' }); }
