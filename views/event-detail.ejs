@@ -11,11 +11,15 @@
   <style>
     body { background: #F8FAFC; margin: 0; font-family: 'Inter', sans-serif; }
     .page-nav { background: #fff; border-bottom: 1px solid #E2E8F0; padding: 0 60px; }
-    .page-nav-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
-    .page-nav-brand { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.15rem; color: #0040A5; text-decoration: none; }
+    .page-nav-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 100px; }
+    .page-nav-brand { text-decoration: none; display: flex; align-items: center; gap: 0; margin-left: -20px; }
+    .page-nav-brand .logo-text { display: flex; flex-direction: column; margin-left: -50px; }
+    .page-nav-brand .logo-title { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; color: #0040A5; line-height: 1.1; }
+    .page-nav-brand .logo-tagline { font-size: 0.75rem; color: #64748B; font-weight: 500; }
     .page-nav-links { display: flex; gap: 28px; }
     .page-nav-links a { font-family: 'Inter', sans-serif; font-size: 0.9rem; color: #475569; text-decoration: none; font-weight: 500; }
     .page-nav-links a:hover { color: #0040A5; }
+    @media (max-width: 600px) { .page-nav-brand .logo-tagline { display: none; } .page-nav { padding: 0 20px; } }
     .event-detail-wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
     .back-link { display: inline-flex; align-items: center; gap: 6px; color: #0040A5; font-size: 0.88rem; font-weight: 600; text-decoration: none; margin-bottom: 28px; }
     .back-link:hover { color: #002d80; }
@@ -83,7 +87,13 @@
 <body>
   <nav class="page-nav">
     <div class="page-nav-inner">
-      <a href="/" class="page-nav-brand">Bliss Bangladesh</a>
+      <a href="/" class="page-nav-brand">
+        <img src="/images/logo.png" alt="Bliss Bangladesh Logo" style="height:100px;width:auto;display:block;">
+        <div class="logo-text">
+          <span class="logo-title">Bliss Bangladesh</span>
+          <span class="logo-tagline">Care. Compassion. Community.</span>
+        </div>
+      </a>
       <div class="page-nav-links">
         <a href="/">Home</a>
         <a href="/events">Events</a>

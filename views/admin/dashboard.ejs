@@ -22,7 +22,7 @@
     /* ─── Sidebar ─── */
     .sb{width:240px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
     .sb-brand{padding:20px 18px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sidebar-border)}
-    .sb-logo{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .sb-logo{width:54px;height:54px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent}
     .sb-name{font-family:var(--font-h);font-weight:800;font-size:.95rem;color:#fff;line-height:1.2}
     .sb-name small{display:block;font-size:.65rem;font-weight:400;color:var(--subtle);font-family:var(--font-b)}
     .sb-user{padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sidebar-border)}
@@ -229,10 +229,7 @@
 <aside class="sb">
   <div class="sb-brand">
     <div class="sb-logo">
-      <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-        <path d="M24 16C24 16 20 12 18 14C16 16 17 20 20 23L24 26L28 23C31 20 32 16 30 14C28 12 24 16 24 16Z" fill="#fff"/>
-        <path d="M12 28C14 33 20 36 24 36C28 36 34 33 36 28C33 30 28 28 24 28C20 28 15 30 12 28Z" fill="rgba(255,255,255,.75)"/>
-      </svg>
+      <img src="/images/logo.png" alt="Bliss Bangladesh Logo" style="height:54px;width:auto;display:block;filter:brightness(0) invert(1);">
     </div>
     <div class="sb-name">Bliss Bangladesh<small>Admin Panel</small></div>
   </div>
