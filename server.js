@@ -441,10 +441,10 @@ app.post('/api/admin/users/change-password', requireAuth, (req, res) => {
 
 app.post('/api/admin/settings', requireAuth, (req, res) => {
   try {
-    const stmt = db.prepare('UPDATE settings SET value=? WHERE key=?');
+    const stmt = db.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
     let count = 0;
     for (const [key, value] of Object.entries(req.body)) {
-      if (stmt.run(value, key).changes > 0) count++;
+      stmt.run(key, value); count++;
     }
     audit(req, 'UPDATE', 'settings', null, `Updated ${count} settings`);
     res.json({ success: true, updatedCount: count });
